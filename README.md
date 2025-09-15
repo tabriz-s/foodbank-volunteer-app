@@ -1,4 +1,8 @@
 # COSC 4353 Project - Volunteer App - Group 10
+- **Javier Alvarez**
+- **Tadiwa Kabayadondo**
+- **Tabriz Sadredinov**
+- **Mohamed Uddin**
 
 We are designing a web application for a food bank-based nonprofit organization. The core users of the app will be volunteers and administrators. Since we are catering to a wide variety of users, the app will be simple but intuitive, with cross-platform functionality.
 
