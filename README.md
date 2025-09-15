@@ -1,35 +1,29 @@
-# Volunteer Management System
+# COSC 4353 Project - Volunteer App - Group 10
 
 We are designing a web application for a food bank-based nonprofit organization. The core users of the app will be volunteers and administrators. Since we are catering to a wide variety of users, the app will be simple but intuitive, with cross-platform functionality.
 
-## Development Methodology
+## Development Methodology:
 
-## High-Level Design / Architecture
+## High-Level Design / Architecture:
 
-## Features/Commponent Interaction
-
-- **Volunteer Management**: Register volunteers and track their skills, preferences, and availability
-- **Event Management**: Create and manage volunteer events with location and requirements
-- **Matching**: Automatically match volunteers to events based on skills, preferences, and proximity
-- **Notifications**: Backend calls for notifications/emails to the API which will send event reminders.
-- **History**: During or after event creation/completion, record it in the status attribute of the EVENTS table.
-- **Geolocation**: Calculate distances between volunteers and event locations
+## Features/Commponent Interaction:
+- **Volunteer Management**:
+- **Event Management**: 
+- **Matching**: 
+- **Notifications**: 
 
 ## Tech Stack
 
 ### Frontend
-
 - JS/React
 - Tailwind CSS
 - Firebase Authentication
 
 ### Backend
-
 - Node.js/Express.js
 - MySQL database
 
 ### API's and external services
-
 - Google Maps API for geolocation and distance matching
 - Azure Database for hosting
 - Vercel for deployment
@@ -49,18 +43,16 @@ npm run install:all
 npm run dev
 ```
 
-### Git workflow:
+### Git workflow (not strictly necessary):
 
 ```bash
-# 1. Always pull the latest code
+# 1. pull the latest code
 git pull origin main
 
 # 2. Create a new branch for your feature. Ex:
 git checkout -b feature/user-authentication
-# or
-git checkout -b feature/volunteer-dashboard
-# or
-git checkout -b feature/event-management
+# or 
+git checkout -b feature/whatever-the-feature-is
 
 # 3. Work on your feature...
 
@@ -80,21 +72,17 @@ git branch -d feature/user-authentication
 #### Commit message format:
 
 Type: Brief description
-
 - Detailed change 1
 - Detailed change 2
 - Any breaking changes
 
-Types: Add, Update, Fix, Remove, Refactor
+Types: Add, Update, Fix, Remove
 
-#### For small changes just commit directly to main:
+#### For small changes, just commit directly to main:
 
 ```bash
-# 1. Always pull first
 git pull origin main
-
-# 2. Make your small change
-# 3. Stage, commit, and push
+# Make your small change
 git add .
 git commit -m "Fix: typo in README"
 git push origin main
