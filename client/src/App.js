@@ -9,6 +9,7 @@ import Footer from './components/common/Footer';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ProfilePage from './pages/volunteer/ProfilePage';
 
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
@@ -57,12 +58,16 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Volunteer Routes */}
+            <Route path="/volunteer/profile" element={<ProfilePage />} />
             
             {/* TODO: Add protected routes as features are being developed */}
             {/* 
             <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             */}
+            
             
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<Home />} />
