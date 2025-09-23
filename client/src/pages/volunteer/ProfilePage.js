@@ -423,7 +423,7 @@ const ProfilePage = () => {
                                             className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                                                 loading 
                                                 ? 'bg-gray-400 cursor-not-allowed' 
-                                                : 'bg-bg-blue-600 hover:bg-blue-700'
+                                                : 'bg-blue-600 hover:bg-blue-700'
                                             }`}
                                         >
                                             {loading ? 'Saving...' : 'Save Changes'}
