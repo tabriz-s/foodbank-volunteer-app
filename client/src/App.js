@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
 
@@ -9,10 +9,23 @@ import Footer from './components/common/Footer';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import NotificationSystem from "./components/common/NotificationSystem";
 
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
 // import AdminDashboard from './pages/admin/Dashboard';
+
+// Separate wrapper for notifications system
+function NotificationWrapper() {
+    const location = useLocation();
+    const hiddenRoutes = ['/login', '/register'];
+
+    // Only render notifications if not on hidden routes
+    if (hiddenRoutes.includes(location.pathname)) {
+        return null;
+    }
+    return <NotificationSystem />;
+}
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Checking...');
@@ -57,7 +70,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
+
             {/* TODO: Add protected routes as features are being developed */}
             {/* 
             <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
@@ -70,6 +83,7 @@ function App() {
         </main>
 
         <Footer />
+        <NotificationWrapper />
       </div>
     </Router>
   );
