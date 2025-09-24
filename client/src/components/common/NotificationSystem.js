@@ -1,48 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Bell } from "lucide-react"; // notification bell icon
-
-// Mock notifications for testing
-const mockNotifications = [
-    {
-        id: 1,
-        type: "assignment",
-        message: "You’ve been assigned to 'Weekly Food Distribution' on Oct 10.",
-        time: "2 hours ago",
-    },
-    {
-        id: 2,
-        type: "update",
-        message: "Event 'Canned Goods Sorting' has changed its start time to 10 AM.",
-        time: "1 day ago",
-    },
-    {
-        id: 3,
-        type: "reminder",
-        message: "Reminder: 'Emergency Relief Packing' is tomorrow at 9 AM.",
-        time: "2 days ago",
-    },
-    {
-        id: 4,
-        type: "assignment",
-        message: "You’ve been assigned to 'Neighborhood Delivery Route' on Oct 5.",
-        time: "5 days ago",
-    },
-];
+import React, { useState, useContext } from "react";
+import { Bell } from "lucide-react";
+import { NotificationContext } from "../../contexts/NotificationContext";
 
 const NotificationSystem = () => {
-    const [notifications, setNotifications] = useState([]);
+    const { notifications, dismissNotification } = useContext(NotificationContext);
     const [isOpen, setIsOpen] = useState(false);
-
-    // Load notifications on mount
-    useEffect(() => {
-        // fetch('/api/notifications')
-        setNotifications(mockNotifications);
-    }, []);
-
-    // Dismiss individual notification
-    const handleDismiss = (id) => {
-        setNotifications((prev) => prev.filter((note) => note.id !== id));
-    };
 
     return (
         <>
@@ -60,12 +22,10 @@ const NotificationSystem = () => {
                 )}
             </button>
 
-            {/* Notification Panel */}
+            {/* Panel */}
             {isOpen && (
                 <div className="fixed bottom-20 right-6 w-80 bg-white shadow-xl rounded-lg border border-gray-200 p-4 max-h-96 overflow-y-auto">
-                    <h3 className="text-lg font-semibold mb-3 text-gray-800">
-                        Notifications
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-3 text-gray-800">Notifications</h3>
 
                     {notifications.length === 0 ? (
                         <p className="text-gray-600 text-sm">No new notifications 🎉</p>
@@ -81,7 +41,7 @@ const NotificationSystem = () => {
                                         <p className="text-xs text-gray-500">{note.time}</p>
                                     </div>
                                     <button
-                                        onClick={() => handleDismiss(note.id)}
+                                        onClick={() => dismissNotification(note.id)}
                                         className="ml-2 text-gray-400 hover:text-red-600"
                                         aria-label="Dismiss"
                                     >

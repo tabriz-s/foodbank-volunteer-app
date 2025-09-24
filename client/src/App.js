@@ -14,6 +14,9 @@ import NotificationSystem from "./components/common/NotificationSystem";
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
 // import AdminDashboard from './pages/admin/Dashboard';
+import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
+import { NotificationProvider } from "./contexts/NotificationContext";
+
 
 // Separate wrapper for notifications system
 function NotificationWrapper() {
@@ -48,6 +51,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
+  <NotificationProvider>
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -71,6 +75,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            <Route path="/admin/matching" element={<VolunteerMatchingForm />} />
             {/* TODO: Add protected routes as features are being developed */}
             {/* 
             <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
@@ -86,6 +91,7 @@ function App() {
         <NotificationWrapper />
       </div>
     </Router>
+  </NotificationProvider>
   );
 }
 
