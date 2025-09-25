@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { NotificationContext } from "../../contexts/NotificationContext";
 import { Check } from 'lucide-react'
 
-// Mock data; to use database once implemented
+// Mock data; to use database once implemented.
 const mockVolunteers = [
     { id: "vol-001", name: "Tadiwa K" },
     { id: "vol-002", name: "Tabriz S" },
