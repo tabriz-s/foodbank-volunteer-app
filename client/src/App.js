@@ -11,6 +11,7 @@ import About from "./pages/About";
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ProfilePage from './pages/volunteer/ProfilePage';
+import VolunteerHistory from './pages/volunteer/VolunteerHistory';
 
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
@@ -63,6 +64,7 @@ function App() {
 
             {/* Volunteer Routes */}
             <Route path="/volunteer/profile" element={<ProfilePage />} />
+            <Route path="/volunteer/history" element={<VolunteerHistory />} />
             
             {/* TODO: Add protected routes as features are being developed */}
             {/* 
