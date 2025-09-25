@@ -6,6 +6,7 @@ import './App.css';
 // Import components over here
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import DevNavigation from './components/common/DevNavigation';
 import Home from './pages/Home';
 import About from "./pages/About";
 import Login from './pages/auth/Login';
@@ -64,7 +65,7 @@ function App() {
         <div className="bg-blue-100 border-b border-blue-200 px-4 py-2">
           <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
             <span className="text-blue-800">
-              🚧 Development Mode - Volunteer Management System
+              In Development Mode - Volunteer Management System
             </span>
             <span className="text-blue-600">
               Backend: {apiStatus}
@@ -100,6 +101,8 @@ function App() {
 
         <Footer />
         <NotificationWrapper />
+        {/* Development Navigation - just shows all the pages in development */}
+        <DevNavigation />
       </div>
     </Router>
   </NotificationProvider>

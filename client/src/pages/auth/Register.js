@@ -138,7 +138,7 @@ const Register = () => {
               <span className="text-2xl">🌟</span>
             </div>
             <h2 className="text-3xl font-bold text-gray-900">
-              Join our Foodbank Nonprofit
+              Join Singh's Generosity
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               Already have an account?{' '}

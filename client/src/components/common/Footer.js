@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <span className="text-xl font-bold">Foodbank Nonprofit</span>
+              <span className="text-xl font-bold">Singh's Generosity</span>
             </div>
             <p className="text-gray-300">
               Connecting volunteers with food bank organizations to fight hunger in our community.
