@@ -11,10 +11,16 @@
     "server:start": "cd server && npm start",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install"
   },
-  "keywords": ["volunteer", "food bank", "nonprofit", "management"],
+  "keywords": [
+    "volunteer",
+    "food bank",
+    "nonprofit",
+    "management"
+  ],
   "author": "Software Design Group 10",
   "license": "ISC",
   "dependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "lucide-react": "^0.544.0"
   }
 }

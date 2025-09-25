@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
 
@@ -10,12 +10,29 @@ import Home from './pages/Home';
 import About from "./pages/About";
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+
+import NotificationSystem from './components/common/NotificationSystem';
 import ProfilePage from './pages/volunteer/ProfilePage';
 import VolunteerHistory from './pages/volunteer/VolunteerHistory';
 
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
 // import AdminDashboard from './pages/admin/Dashboard';
+import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
+import { NotificationProvider } from "./contexts/NotificationContext";
+
+
+// Separate wrapper for notifications system
+function NotificationWrapper() {
+    const location = useLocation();
+    const hiddenRoutes = ['/login', '/register'];
+
+    // Only render notifications if not on hidden routes
+    if (hiddenRoutes.includes(location.pathname)) {
+        return null;
+    }
+    return <NotificationSystem />;
+}
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Checking...');
@@ -38,6 +55,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
+  <NotificationProvider>
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -62,6 +80,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+
+            <Route path="/admin/matching" element={<VolunteerMatchingForm />} />
             {/* Volunteer Routes */}
             <Route path="/volunteer/profile" element={<ProfilePage />} />
             <Route path="/volunteer/history" element={<VolunteerHistory />} />
@@ -79,8 +99,10 @@ function App() {
         </main>
 
         <Footer />
+        <NotificationWrapper />
       </div>
     </Router>
+  </NotificationProvider>
   );
 }
 
