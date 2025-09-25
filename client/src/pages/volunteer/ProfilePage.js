@@ -3,11 +3,17 @@ import React, { useState, useEffect} from 'react';
 const ProfilePage = () => {
     const [profileData, setProfileData] = useState({
         full_name: '',
-        full_address: '',
+        phone_number: '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        state: '',
+        zip_code: '',
         skills: [],
         preferences: '',
-        availability_dates: []
+        availability_days: []
     });
+
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -60,24 +66,16 @@ const ProfilePage = () => {
         }));
     }; 
 
-    // add volunteers availability
-    const handleAvailabilityAddition = (date) => {
-        const dateStr = date.target.value;
-        if (!profileData.availability_dates.includes(dateStr)) {
-            setProfileData(prev => ({
-                ...prev,
-                availability_dates: [...prev.availability_dates, dateStr]
-            }));
-        }
-    };
-
-    // remove volunteers availability
-    const removeAvailabilityDate = (dateToRemove) => {
+    // handle day selection for availability
+    const handleDayToggle = (day) => {
         setProfileData(prev => ({
             ...prev,
-            availability_dates: prev.availability_dates.filter(date => date !== dateToRemove)
+            availability_days: prev.availability_days.includes(day)
+                ? prev.availability_days.filter(d => d !== day)
+                : [...prev.availability_days, day]
         }));
     };
+
 
     // validate name, skills, and avilability
     const validateForm = () => {
@@ -95,15 +93,35 @@ const ProfilePage = () => {
         newErrors.skills = 'Please select at least one skill';
         }
 
-        // Check address is entered
-        if (!profileData.full_address.trim()) {
-            newErrors.full_address = 'Address is required';
-        } else if (profileData.full_address.length > 500) {
-            newErrors.full_address = 'Address must be 500 characters or less';
+        // Check address fields
+        if (!profileData.address_1.trim()) {    // Address Line 1 validation
+            newErrors.address_1 = 'Address Line 1 is required';
+        } else if (profileData.address_1.length > 100) {
+            newErrors.address_1 = 'Address Line 1 must be 100 characters or less';
+        }
+
+        if (profileData.address_2.length > 100) {   // Address Line 2 validation (optional)
+            newErrors.address_2 = 'Address Line 2 must be 100 characters or less';
+        }
+       
+        if (!profileData.city.trim()) {         // City validation
+            newErrors.city = 'City is required';
+        } else if (profileData.city.length > 100) {
+            newErrors.city = 'City must be 100 characters or less';
+        }
+
+        if (!profileData.state) {               // State validation
+            newErrors.state = 'State is required';
+        }
+        
+        if (!profileData.zip_code.trim()) {     // Zip code validation
+            newErrors.zip_code = 'Zip code is required';
+        } else if (!/^\d{5}(-\d{4})?$/.test(profileData.zip_code.trim())) {
+            newErrors.zip_code = 'Please enter a valid zip code (12345 or 12345-6789)';
         }
         
         // removes specific dates from avalability list
-        if (profileData.availability_dates.length === 0) {
+        if (profileData.availability_days.length === 0) {
             newErrors.availability_dates = 'Please select at least one available date';
         }
 
@@ -171,67 +189,211 @@ const ProfilePage = () => {
     ]; 
 
     // render volunteers personal info when thsi section of the navbar is selected
-    const renderPersonalInfo = () => (
-        <div className='space-y-6'>
-            <div>
-                <label htmlFor='full_name' className='block text-sm font-medium text-gray-700 mb-2'>
-                    Full Name
-                </label>
-                <input 
-                    type="text"
-                    id = "full_name"
-                    name ="full_name"
-                    value = {profileData.full_name}
-                    onChange = {handleInputChange}
-                    maxLength = "50"
-                    placeholder='Enter Full Name'
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.full_name ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                />
-                {errors.full_name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
-            </div>
+    const renderPersonalInfo = () => {
+        const states = [
+            { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
+            { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+            { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'FL', name: 'Florida' },
+            { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
+            { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' }, { code: 'IA', name: 'Iowa' },
+            { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
+            { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' }, { code: 'MA', name: 'Massachusetts' },
+            { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
+            { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' }, { code: 'NE', name: 'Nebraska' },
+            { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
+            { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' }, { code: 'NC', name: 'North Carolina' },
+            { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
+            { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' }, { code: 'RI', name: 'Rhode Island' },
+            { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
+            { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' }, { code: 'VT', name: 'Vermont' },
+            { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
+            { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
+        ];
 
-            <div>
-                <label htmlFor="full_address" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Address
-                </label>
-                <input 
-                    id="full_address"
-                    name="full_address"
-                    value={profileData.full_address}
-                    onChange={handleInputChange}
-                    maxLength="500"
-                    placeholder='Enter Full Address (Street, City, State, ZIP)'
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.full_address ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                />
-                {errors.full_address && (
-                    <p className="mt-1 text-sm text-red-600">{errors.full_address}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-500">{profileData.full_address.length}/500 characters</p>
-            </div>
+        return (
+            <div className="space-y-6">
 
-            <div>
-                <label htmlFor="preferences" className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferences (optional)
-                </label>
-                <textarea
-                    id="preferences"
-                    name="preferences"
-                    value={profileData.preferences}
-                    onChange={handleInputChange}
-                    rows="3"
-                    placeholder="Any preferences for volunteering (e.g., preferred time slots, special accommodations needed, etc.)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                {/* ----Name Section---- */}
+                <div>
+                    <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text"
+                        id="full_name"
+                        name="full_name"
+                        value={profileData.full_name}
+                        onChange={handleInputChange}
+                        maxLength="50"
+                        placeholder="Enter First and Last Name"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.full_name ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {errors.full_name && (
+                        <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                </div>
+
+                {/* ----Phone Number Section---- */}
+                <div>
+                    <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="tel"
+                        id="phone_number"
+                        name="phone_number"
+                        value={profileData.phone_number}
+                        onChange={handleInputChange}
+                        placeholder="(123) 456-7890"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.phone_number ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {errors.phone_number && (
+                        <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
+                    )}
+                </div>
+                
+                {/* ------Address Section------ */}
+
+                {/* Address Line 1 */}
+                <div>
+                    <label htmlFor="address_1" className="block text-sm font-medium text-gray-700 mb-2">
+                        Address Line 1 <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text"
+                        id="address_1"
+                        name="address_1"
+                        value={profileData.address_1}
+                        onChange={handleInputChange}
+                        maxLength="100"
+                        placeholder="Street address"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.address_1 ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {errors.address_1 && (
+                        <p className="mt-1 text-sm text-red-600">{errors.address_1}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                </div>
+
+                {/* Address Line 2 */}
+                <div>
+                    <label htmlFor="address_2" className="block text-sm font-medium text-gray-700 mb-2">
+                        Address Line 2
+                    </label>
+                    <input 
+                        type="text"
+                        id="address_2"
+                        name="address_2"
+                        value={profileData.address_2}
+                        onChange={handleInputChange}
+                        maxLength="100"
+                        placeholder="Apartment, suite, etc. (optional)"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.address_2 ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {errors.address_2 && (
+                        <p className="mt-1 text-sm text-red-600">{errors.address_2}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                </div>
+                
+                {/* City */}
+                <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                        City <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text"
+                        id="city"
+                        name="city"
+                        value={profileData.city}
+                        onChange={handleInputChange}
+                        maxLength="100"
+                        placeholder="City"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.city ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    />
+                    {errors.city && (
+                        <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                </div>
+
+                {/* State and Zip Code Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* State */}
+                    <div>
+                         <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                            State <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="state"
+                            name="state"
+                            value={profileData.state}
+                            onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.state ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        >
+                            <option value="">Select State</option>
+                            {states.map(state => (
+                            <option key={state.code} value={state.code}>{state.name}</option>
+                            ))}
+                        </select>
+                        {errors.state && (
+                            <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                        )}
+                    </div>
+                    {/* Zip Code */}
+                    <div>
+                        <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 mb-2">
+                            Zip Code <span className="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text"
+                            id="zip_code"
+                            name="zip_code"
+                            value={profileData.zip_code}
+                            onChange={handleInputChange}
+                            maxLength="9"
+                            placeholder="12345 or 12345-6789"
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            errors.zip_code ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        />
+                        {errors.zip_code && (
+                            <p className="mt-1 text-sm text-red-600">{errors.zip_code}</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Preferences */}
+                <div>
+                    <label htmlFor="preferences" className="block text-sm font-medium text-gray-700 mb-2">
+                        Preferences (Optional)
+                        </label>
+                        <textarea
+                        id="preferences"
+                        name="preferences"
+                        value={profileData.preferences}
+                        onChange={handleInputChange}
+                        rows="3"
+                        placeholder="Any preferences for volunteering (e.g., preferred time slots, special accommodations needed, etc.)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     // display the users skillset
     const renderSkills = () => (
@@ -292,52 +454,67 @@ const ProfilePage = () => {
         </div>
     );
 
+
     // renders the volunteers availability to help
-    const renderAvailability = () => (
-        <div className="space-y-6">
-            <div>
-                <h3 className='text-lg font-medium text-gray-900 mb-4'>Your Availability</h3>
-                <label htmlFor="availability" className="block text-sm font-medium text-gray-700 mb-2">
-                    Add Available Dates
-                </label>
-                <input
-                    type="date"
-                    id="availability"
-                    onChange={handleAvailabilityAddition}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+    const renderAvailability = () => {
+        const daysOfWeek = [
+            { id: 'monday', label: 'Monday' },
+            { id: 'tuesday', label: 'Tuesday' },
+            { id: 'wednesday', label: 'Wednesday' },
+            { id: 'thursday', label: 'Thursday' },
+            { id: 'friday', label: 'Friday' },
+            { id: 'saturday', label: 'Saturday' },
+            { id: 'sunday', label: 'Sunday' }
+        ];
+        
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Your Weekly Availability</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Select the days of the week when you're generally available to volunteer.
+                    </p>
 
-                {profileData.availability_dates.length > 0 && (
-                    <div className="mt-4">
-                         <p className="text-sm font-medium text-gray-700 mb-3">Selected Dates:</p>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {profileData.availability_dates.map((date) => (
-                                <div key={date} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                    <span className="text-sm font-medium text-blue-800">
-                                        {new Date(date).toLocaleDateString()}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeAvailabilityDate(date)}
-                                        className="text-blue-600 hover:text-blue-800 focus:outline-none"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            ))}
-                         </div>
+                    <div className="space-y-3">
+                        {daysOfWeek.map((day) => (
+                            <label key={day.id} className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={profileData.availability_days.includes(day.id)}
+                                    onChange={() => handleDayToggle(day.id)}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <span className="ml-3 text-sm text-gray-700 font-medium">{day.label}</span>
+                            </label>
+                        ))}
                     </div>
-                )}
 
-                {errors.availability_dates && (
-                    <p className="mt-2 text-sm text-red-600">{errors.availability_dates}</p>
-                )}
+                    {profileData.availability_days.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p className="text-sm font-medium text-blue-800 mb-2">Selected Days</p>
+                            <div>
+                                {profileData.availability_days.map((dayId) =>{
+                                    const day = daysOfWeek.find(d => d.id === dayId);
+                                    return (
+                                        <span
+                                            key={dayId}
+                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                        >
+                                            {day?.label}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {errors.availability_days && (
+                        <p className="mt-2 text-sm text-red-600">{errors.availability_days}</p>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     // switch between what content to render depedning on clicked selection from navbar
     // personal info is the default
