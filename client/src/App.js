@@ -18,7 +18,8 @@ import VolunteerHistory from './pages/volunteer/VolunteerHistory';
 
 // TODO: Import other pages as they're being created
 // import VolunteerDashboard from './pages/volunteer/Dashboard';
-// import AdminDashboard from './pages/admin/Dashboard';
+import AdminDashboard from './pages/admin/Dashboard';
+import ManageEvents from './pages/admin/ManageEvents';
 import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
@@ -90,9 +91,10 @@ function App() {
             {/* TODO: Add protected routes as features are being developed */}
             {/* 
             <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             */}
-            
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+	        <Route path="/admin/events" element={<ManageEvents />} />
             
             {/* Catch all route - redirect to home */}
             <Route path="*" element={<Home />} />
