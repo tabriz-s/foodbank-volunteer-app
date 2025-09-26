@@ -22,7 +22,7 @@ const VolunteerMatchingForm = () => {
     const [selectedEvent, setSelectedEvent] = useState("");
     const [matches, setMatches] = useState([]);
 
-    // ✅ Grab addNotification from context
+    // Grab addNotification from context
     const { addNotification } = useContext(NotificationContext);
 
     const handleSubmit = (e) => {
@@ -36,7 +36,7 @@ const VolunteerMatchingForm = () => {
             };
             setMatches([...matches, newMatch]);
 
-            // ✅ Push a notification
+            // Push a notification
             addNotification({
                 type: "assignment",
                 message: `${selectedVolunteer} has been assigned to ${selectedEvent}.`,
@@ -50,7 +50,7 @@ const VolunteerMatchingForm = () => {
     };
 
     return (
-        <div className="max-w-lg mx-auto bg-white shadow rounded-lg p-6">
+        <div className="max-w-lg mx-auto mt-8 bg-white shadow rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Volunteer Matching</h2>
 
             {/* Form */}
