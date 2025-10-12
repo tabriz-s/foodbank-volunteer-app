@@ -50,6 +50,7 @@ const getProfile = async (req, res) => {
     }
 };
 
+//post
 // create a new user profile
 const createProfile = async (req, res) => {
     try {
@@ -76,7 +77,7 @@ const createProfile = async (req, res) => {
         const User_id = req.body.user_id || Math.floor(Math.random() * 1000); // Mock user ID
 
         // Check if profile already exists for this user
-        const existingProfile = Volunteer.getVolunteerByUserId(User_id);
+        const existingProfile = Volunteer.getVolunteerWithUser_id(User_id);
         if (existingProfile) {
             return res.status(400).json({
             success: false,
@@ -124,7 +125,7 @@ const updateProfile = async (req, res) => {
         // In real app, user_id comes from JWT
         const userId = req.query.user_id || req.body.user_id || 1;
 
-        const volunteer = Volunteer.getVolunteerByUserId(userId);
+        const volunteer = Volunteer.getVolunteerWithUser_id(userId);
 
         if (!volunteer) {
             return res.status(404).json({
