@@ -1,6 +1,12 @@
 import React, { useState, useEffect} from 'react';
+import { fetchProfile, createProfile, updateProfile, fetchSkills } from '../../services/ProfileAPI';
 
 const ProfilePage = () => {
+
+    // mock user data - using user with ID 1. 
+    // final app should use authentication content
+    const CURRENT_USER_ID = 1; // change to 3+ to test "new user"
+
     const [profileData, setProfileData] = useState({
         full_name: '',
         phone_number: '',
@@ -16,27 +22,69 @@ const ProfilePage = () => {
 
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
     const [availableSkills, setAvailableSkills] = useState([]);
     const [activeSection, setActiveSection] = useState('personal-info');
+    const [profileExists, setProfileExists] = useState(false); // check if the user is new or already in the database
+    const [isEditMode, setIsEditMode] = useState(false); // check if the user editing or viewing page
+
     
     // mock data for testing - replace with real data once database is connected
     useEffect(() => {
-        // This would be an API call: fetch('/api/skills') <- example
-        setAvailableSkills([
-            { Skills_id: 1, Description: 'Cooking', Category: 'Food_Preparation' },
-            { Skills_id: 2, Description: 'Food Safety Certification', Category: 'Food_Preparation' },
-            { Skills_id: 3, Description: 'Heavy Lifting', Category: 'Warehouse' },
-            { Skills_id: 4, Description: 'Inventory Management', Category: 'Warehouse' },
-            { Skills_id: 5, Description: 'CDL License', Category: 'Transportation' },
-            { Skills_id: 6, Description: 'Safe Driving', Category: 'Transportation' },
-            { Skills_id: 7, Description: 'Customer Service', Category: 'Distribution' },
-            { Skills_id: 8, Description: 'Spanish Speaking', Category: 'Communication' },
-            { Skills_id: 9, Description: 'First Aid Certification', Category: 'Safety' }
-        ]);
+        const loadData = async () => {
+            try {
+                setLoading(true);
 
-        
-        // This would be: fetchProfileData();
+                // load in available skills
+                const skills = await fetchSkills();
+                setAvailableSkills(skills);
+
+                // fetch existing profile if it exists - GET
+                try {
+                    const response = await fetchProfile(CURRENT_USER_ID);
+
+                    // if profile exists
+                    if (response.success && response.data) {
+                        const volunteer = response.data; // data received 
+
+                        // parse the data from the backend (databse in the future) to put full name and days on one line 
+                        const fullName = `${volunteer.First_name} ${volunteer.Middle_name ? volunteer.Middle_name + ' ' : ''}${volunteer.Last_name}`.trim(); 
+                        const availabilityDays = volunteer.Available_days ? volunteer.Available_days.split(',') : [];
+                        
+                        // populate form with fetched data
+                        setProfileData({
+                            full_name: fullName,
+                            phone_number: volunteer.phone_number || '',
+                            address_1: volunteer.address_1 || '',
+                            address_2: volunteer.address_2 || '',
+                            city: volunteer.city || '',
+                            state: volunteer.state || '',
+                            zip_code: volunteer.zip_code || '',
+                            skills: [], // Need to fetch this from a join table later
+                            preferences: volunteer.Preferences || '',
+                            availability_days: availabilityDays
+                        });
+
+                        setProfileExists(true);
+                        setIsEditMode(false); // starts in view mode
+                    }
+                } catch (profileError) {
+                    console.log("No existing profile found - new user");
+                    setProfileExists(false);
+                    setIsEditMode(true); // user does not exists so they must add in their info
+                }
+            } catch (error) {
+                console.error("Error loading dataset:", error);
+                setErrors({ submit: "Failed to load data. Refresh the page."});
+
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+
     }, []);
     
     // handle text inputs
@@ -47,7 +95,7 @@ const ProfilePage = () => {
             [name]: value
         }));
         
-        // clear the error when the user startys typing
+        // clear the error when the user starts typing
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -61,8 +109,8 @@ const ProfilePage = () => {
         setProfileData(prev => ({
             ...prev,
             skills: prev.skills.includes(skillId)
-            ? prev.skills.filter(id => id !== skillId)  // Remove if already selected
-            : [...prev.skills, skillId]                 // Add if not selected
+                ? prev.skills.filter(id => id !== skillId)  // Remove if already selected
+                : [...prev.skills, skillId]                 // Add if not selected
         }));
     }; 
 
@@ -129,6 +177,21 @@ const ProfilePage = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+    // Handle Edit button click
+    const handleEditClick = () => {
+        setIsEditMode(true);
+        setSuccess(false);
+        setErrors({});
+    }
+
+    // Handle Cancel edit button
+    const handleCancelEdit = () => {
+        setIsEditMode(false);
+        setErrors({});
+        // have the option to reload the original data. Test first
+    }
+    
+    // submit form to the backend
     const handleSubmit = async (event) => {
         event.preventDefault();
 
@@ -141,22 +204,36 @@ const ProfilePage = () => {
         setSuccess(false); // clear any previous success messege
 
         try {
-            /*
-            there should be an POST API call here
-            change when front end is complete and test with real data
-            */
+            if (profileExists) {
+                // update the data (PUT)
+                const response = await updateProfile(CURRENT_USER_ID, profileData);
+                if (response.success) {
+                    setSuccess(true);
+                    setIsEditMode(false); // done editing/updating - back to view mode
+                    console.log("Profile updated:", response.data);
+                }
+            } else {
+                // create a new profile - new user
+                const response = await createProfile({
+                    ...profileData,
+                    user_id: CURRENT_USER_ID // should be a new user.
+                });
 
-            // sumulate API Call for testing
-            await new Promise(resolve => setTimeout(resolve, 1000)); // sending data simulation - small wait time
+                if (response.success) {
+                    setSuccess(true);
+                    setProfileExists(true); // profile created so make true
+                    setIsEditMode(false); // done editing/updating - back to view mode
+                    console.lag('Profile created:', response.data);
+                }
+            }
             
-            setSuccess(true);
-            console.log('Profile saved:', profileData);
+            setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
 
         } catch (error) {
             console.error('Error saving profile:', error);
-            setErrors({ submit: 'Failed to save profile. Please try again.' });
+            setErrors({ submit: error.message || 'Failed to save profile. Please try again.' });
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
@@ -188,7 +265,7 @@ const ProfilePage = () => {
         }
     ]; 
 
-    // render volunteers personal info when thsi section of the navbar is selected
+    // render volunteers personal info when this section of the navbar is selected
     const renderPersonalInfo = () => {
         const states = [
             { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -210,6 +287,8 @@ const ProfilePage = () => {
             { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
         ];
 
+        const isReadOnly = profileExists && !isEditMode; // Check if user is viewing or editing
+
         return (
             <div className="space-y-6">
 
@@ -227,13 +306,15 @@ const ProfilePage = () => {
                         maxLength="50"
                         placeholder="Enter First and Last Name"
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.full_name ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.full_name && (
                         <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                    )}
                 </div>
 
                 {/* ----Phone Number Section---- */}
@@ -249,8 +330,8 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         placeholder="(123) 456-7890"
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.phone_number ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.phone_number ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.phone_number && (
                         <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
@@ -273,13 +354,15 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="Street address"
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.address_1 ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.address_1 ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.address_1 && (
                         <p className="mt-1 text-sm text-red-600">{errors.address_1}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                    )}
                 </div>
 
                 {/* Address Line 2 */}
@@ -296,13 +379,15 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="Apartment, suite, etc. (optional)"
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.address_2 ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.address_2 ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.address_2 && (
                         <p className="mt-1 text-sm text-red-600">{errors.address_2}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                    )}
                 </div>
                 
                 {/* City */}
@@ -319,13 +404,15 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="City"
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.city ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                    )}
                 </div>
 
                 {/* State and Zip Code Row */}
@@ -341,18 +428,19 @@ const ProfilePage = () => {
                             value={profileData.state}
                             onChange={handleInputChange}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.state ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            } ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
                         >
                             <option value="">Select State</option>
                             {states.map(state => (
-                            <option key={state.code} value={state.code}>{state.name}</option>
+                                <option key={state.code} value={state.code}>{state.name}</option>
                             ))}
                         </select>
                         {errors.state && (
                             <p className="mt-1 text-sm text-red-600">{errors.state}</p>
                         )}
                     </div>
+
                     {/* Zip Code */}
                     <div>
                         <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 mb-2">
@@ -367,8 +455,8 @@ const ProfilePage = () => {
                             maxLength="9"
                             placeholder="12345 or 12345-6789"
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.zip_code ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            } ${errors.zip_code ? 'border-red-500' : 'border-gray-300'}`}
                         />
                         {errors.zip_code && (
                             <p className="mt-1 text-sm text-red-600">{errors.zip_code}</p>
@@ -388,7 +476,10 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         rows="3"
                         placeholder="Any preferences for volunteering (e.g., preferred time slots, special accommodations needed, etc.)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={isReadOnly}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } border-gray-300`}
                     />
                 </div>
             </div>
@@ -396,42 +487,50 @@ const ProfilePage = () => {
     };
 
     // display the users skillset
-    const renderSkills = () => (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Select Your Skills</h3>
-                <div className="border rounded-md p-4 max-h-96 overflow-y-auto bg-gray-50">
-                    {Object.entries(skillsByCategory).map(([category, skills]) => (
-                        <div key={category} className="mb-6">
-                            <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
-                                {category.replace('_', ' ')}
-                            </h4>
-                            <div className="space-y-3">
-                                {skills.map((skill) => (
-                                    <label key={skill.Skills_id} className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={profileData.skills.includes(skill.Skills_id)}
-                                            onChange={() => handleSkillToggle(skill.Skills_id)}
-                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        />
-                                        <span className="ml-3 text-sm text-gray-700">{skill.Description}</span>
-                                    </label>
-                                ))}
+    const renderSkills = () => {
+        const isReadOnly = profileExists && !isEditMode; // check if user is viewing or editing
+        
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        {isReadOnly ? 'Your Skills' : 'Select Your Skills'}
+                    </h3>
+                    <div className="border rounded-md p-4 max-h-96 overflow-y-auto bg-gray-50">
+                        {Object.entries(skillsByCategory).map(([category, skills]) => (
+                            <div key={category} className="mb-6">
+                                <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
+                                    {category.replace('_', ' ')}
+                                </h4>
+                                <div className="space-y-3">
+                                    {skills.map((skill) => (
+                                        <label key={skill.Skills_id} className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={profileData.skills.includes(skill.Skills_id)}
+                                                onChange={() => handleSkillToggle(skill.Skills_id)}
+                                                className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                                    isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+                                                }`}
+                                            />
+                                            <span className="ml-3 text-sm text-gray-700">{skill.Description}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                    {errors.skills && (
+                        <p className="mt-2 text-sm text-red-600">{errors.skills}</p>
+                    )}
+                    <p className="mt-2 text-sm text-gray-600">
+                        {profileData.skills.length} skill{profileData.skills.length !== 1 ? 's' : ''} selected
+                    </p>
                 </div>
-                {errors.skills && (
-                    <p className="mt-2 text-sm text-red-600">{errors.skills}</p>
-                )}
-                 <p className="mt-2 text-sm text-gray-600">
-                    {profileData.skills.length} skill{profileData.skills.length !== 1 ? 's' : ''} selected
-                </p>
             </div>
-        </div>
-    );
-
+        );
+    };
+   
     // this is to show the email the volunteer used to log in
     // This is just for now - update later to show only the email and an option to change their password
     const renderEmailPassword = () => (
@@ -466,13 +565,16 @@ const ProfilePage = () => {
             { id: 'saturday', label: 'Saturday' },
             { id: 'sunday', label: 'Sunday' }
         ];
+
+        const isReadOnly = profileExists && !isEditMode;
         
         return (
             <div className="space-y-6">
                 <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Your Weekly Availability</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                        Select the days of the week when you're generally available to volunteer.
+                        {isReadOnly ? 'Days of week you are generally available to volunteer.' : 
+                            'Select the days of the week when you are generally available to volunteer'}
                     </p>
 
                     <div className="space-y-3">
@@ -482,7 +584,9 @@ const ProfilePage = () => {
                                     type="checkbox"
                                     checked={profileData.availability_days.includes(day.id)}
                                     onChange={() => handleDayToggle(day.id)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                        isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+                                    }`}
                                 />
                                 <span className="ml-3 text-sm text-gray-700 font-medium">{day.label}</span>
                             </label>
@@ -492,7 +596,7 @@ const ProfilePage = () => {
                     {profileData.availability_days.length > 0 && (
                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                             <p className="text-sm font-medium text-blue-800 mb-2">Selected Days</p>
-                            <div>
+                            <div className="flex flex-wrap gap-2">
                                 {profileData.availability_days.map((dayId) =>{
                                     const day = daysOfWeek.find(d => d.id === dayId);
                                     return (
