@@ -27,7 +27,7 @@ const getProfile = async (req, res) => {
         // in final product the user_id should come from a token of some kind
 
         // mock userId
-        const userId = req.query.user_id || 1;
+        const userId = req.query.user_id || 1; // change the digit for testing
         const volunteer = Volunteer.getVolunteerWithId(userId);
 
         if (!volunteer) {

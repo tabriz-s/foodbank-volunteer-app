@@ -5,7 +5,7 @@ const ProfilePage = () => {
 
     // mock user data - using user with ID 1. 
     // final app should use authentication content
-    const CURRENT_USER_ID = 1; // change to 3+ to test "new user"
+    const CURRENT_USER_ID = 1; // change to 3+ to test "new user" change in Profile controller to change user
 
     const [profileData, setProfileData] = useState({
         full_name: '',
@@ -28,6 +28,7 @@ const ProfilePage = () => {
     const [activeSection, setActiveSection] = useState('personal-info');
     const [profileExists, setProfileExists] = useState(false); // check if the user is new or already in the database
     const [isEditMode, setIsEditMode] = useState(false); // check if the user editing or viewing page
+    const [originalProfileData, setOriginalProfileData] = useState(null); // store original profile data for when the user hits the cancel button (revert to this state when clicked)
 
     
     // mock data for testing - replace with real data once database is connected
@@ -53,7 +54,7 @@ const ProfilePage = () => {
                         const availabilityDays = volunteer.Available_days ? volunteer.Available_days.split(',') : [];
                         
                         // populate form with fetched data
-                        setProfileData({
+                        const loadedProfileData = {
                             full_name: fullName,
                             phone_number: volunteer.phone_number || '',
                             address_1: volunteer.address_1 || '',
@@ -64,8 +65,10 @@ const ProfilePage = () => {
                             skills: [], // Need to fetch this from a join table later
                             preferences: volunteer.Preferences || '',
                             availability_days: availabilityDays
-                        });
-
+                        };
+                        
+                        setProfileData(loadedProfileData); // set current data
+                        setOriginalProfileData(loadedProfileData) // set original data in the event of canceling an update/edit
                         setProfileExists(true);
                         setIsEditMode(false); // starts in view mode
                     }
@@ -167,6 +170,12 @@ const ProfilePage = () => {
         } else if (!/^\d{5}(-\d{4})?$/.test(profileData.zip_code.trim())) {
             newErrors.zip_code = 'Please enter a valid zip code (12345 or 12345-6789)';
         }
+
+        if (!profileData.phone_number.trim()) {
+            newErrors.phone_number = 'Phone number is required';
+        } else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(profileData.phone_number)) {
+            newErrors.phone_number = 'Please enter a valid phone number';
+        }
         
         // removes specific dates from avalability list
         if (profileData.availability_days.length === 0) {
@@ -188,7 +197,10 @@ const ProfilePage = () => {
     const handleCancelEdit = () => {
         setIsEditMode(false);
         setErrors({});
-        // have the option to reload the original data. Test first
+        // reload previous data before an edit was made
+        if (originalProfileData) {
+            setProfileData({...originalProfileData});
+        }
     }
     
     // submit form to the backend
@@ -200,36 +212,60 @@ const ProfilePage = () => {
             return;
         };
 
-        setLoading(true);
+        setSaving(true);
         setSuccess(false); // clear any previous success messege
+        setErrors({});
 
         try {
+            let response;
+
             if (profileExists) {
                 // update the data (PUT)
-                const response = await updateProfile(CURRENT_USER_ID, profileData);
+                console.log("🔵 Sending UPDATE request with data:", profileData); // debugging
+                response = await updateProfile(CURRENT_USER_ID, profileData);
+                console.log("🔵 UPDATE response received:", response); // debugging
+
                 if (response.success) {
-                    setSuccess(true);
+                    console.log("✅ Update successful!"); // debugging
+                    setOriginalProfileData({...profileData});
                     setIsEditMode(false); // done editing/updating - back to view mode
+                    setSuccess(true);
                     console.log("Profile updated:", response.data);
+
+                    setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
+                } else {
+                    // handle the backend returning false
+                    console.log("❌ Update failed:", response); // debugging
+                    setErrors({ submit: response.message || 'Failed to update profile.' })
                 }
+                
             } else {
                 // create a new profile - new user
-                const response = await createProfile({
+                console.log("🟢 Sending CREATE request with data:", profileData); // debugging
+                response = await createProfile({
                     ...profileData,
                     user_id: CURRENT_USER_ID // should be a new user.
                 });
+                console.log("🟢 CREATE response received:", response); // debugging
 
                 if (response.success) {
-                    setSuccess(true);
+                    console.log("✅ Create successful!"); // debugging
+                    setOriginalProfileData({...profileData}); // store new profile 
                     setProfileExists(true); // profile created so make true
                     setIsEditMode(false); // done editing/updating - back to view mode
-                    console.lag('Profile created:', response.data);
+                    setSuccess(true);
+                    console.log('Profile created:', response.data);
+
+                    setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
+                } else {
+                    // Handle backend returning success: false
+                     console.log("❌ Create failed:", response); // debugging
+                    setErrors({ submit: response.message || 'Failed to create profile.' });
                 }
             }
-            
-            setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
 
         } catch (error) {
+            console.error('🔴 Caught error:', error); // debugging
             console.error('Error saving profile:', error);
             setErrors({ submit: error.message || 'Failed to save profile. Please try again.' });
         } finally {
@@ -305,6 +341,7 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="50"
                         placeholder="Enter First and Last Name"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                         } ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
@@ -329,6 +366,7 @@ const ProfilePage = () => {
                         value={profileData.phone_number}
                         onChange={handleInputChange}
                         placeholder="(123) 456-7890"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                         } ${errors.phone_number ? 'border-red-500' : 'border-gray-300'}`}
@@ -353,6 +391,7 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="Street address"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                         } ${errors.address_1 ? 'border-red-500' : 'border-gray-300'}`}
@@ -378,6 +417,7 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="Apartment, suite, etc. (optional)"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                         } ${errors.address_2 ? 'border-red-500' : 'border-gray-300'}`}
@@ -403,6 +443,7 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="City"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                             isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                         } ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
@@ -427,6 +468,7 @@ const ProfilePage = () => {
                             name="state"
                             value={profileData.state}
                             onChange={handleInputChange}
+                            disabled={isReadOnly}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                                 isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                             } ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
@@ -454,6 +496,7 @@ const ProfilePage = () => {
                             onChange={handleInputChange}
                             maxLength="9"
                             placeholder="12345 or 12345-6789"
+                            disabled={isReadOnly}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                                 isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
                             } ${errors.zip_code ? 'border-red-500' : 'border-gray-300'}`}
@@ -509,6 +552,7 @@ const ProfilePage = () => {
                                                 type="checkbox"
                                                 checked={profileData.skills.includes(skill.Skills_id)}
                                                 onChange={() => handleSkillToggle(skill.Skills_id)}
+                                                disabled={isReadOnly}
                                                 className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
                                                     isReadOnly ? 'cursor-not-allowed opacity-60' : ''
                                                 }`}
@@ -584,6 +628,7 @@ const ProfilePage = () => {
                                     type="checkbox"
                                     checked={profileData.availability_days.includes(day.id)}
                                     onChange={() => handleDayToggle(day.id)}
+                                    disabled={isReadOnly}
                                     className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
                                         isReadOnly ? 'cursor-not-allowed opacity-60' : ''
                                     }`}
@@ -637,6 +682,7 @@ const ProfilePage = () => {
         }
     };
 
+    /* ----- Render Page ----- */
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -649,7 +695,12 @@ const ProfilePage = () => {
                                 <nav className="space-y-1">
                                     <div className="px-6 mb-6">
                                         <h1 className="text-2xl font-bold text-gray-900">Profile Management</h1>
-                                        <p className="mt-1 text-sm text-gray-600">Manage your volunteer information</p>
+                                        <p className="mt-1 text-sm text-gray-600">
+                                            {profileExists
+                                                ? (isEditMode ? "Edit your information" : "View your volunteer information")
+                                                : 'Complete your volunteer profile'
+                                            }
+                                        </p>
                                     </div>
                                     {/* get buttons for each item in sidebarItems array */}
                                     {sidebarItems.map((item) => (
@@ -681,7 +732,9 @@ const ProfilePage = () => {
                                                     </svg>
                                                 </div>
                                                 <div className="ml-3">
-                                                    <p className="text-sm font-medium text-green-800">Profile saved successfully!</p>
+                                                    <p className="text-sm font-medium text-green-800">
+                                                        {profileExists ? 'Profile updated successfully!' : 'Profile created successfully!'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -692,23 +745,50 @@ const ProfilePage = () => {
 
                                     {renderContent()}
                                 </div>
-
+                                
+                                {/* Action Buttons */}
                                 <div className="pt-6 px-4 sm:px-6">
                                     {errors.submit && (
                                         <p className="mb-3 text-sm text-red-600">{errors.submit}</p>
                                     )}
                                     <div className="flex justify-end mb-3">
-                                        <button
-                                            type="submit"
-                                            disabled={loading}
-                                            className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                                                loading 
-                                                ? 'bg-gray-400 cursor-not-allowed' 
-                                                : 'bg-blue-600 hover:bg-blue-700'
-                                            }`}
-                                        >
-                                            {loading ? 'Saving...' : 'Save Changes'}
-                                        </button>
+                                        {profileExists && !isEditMode ? (
+                                            // View mode - show an Edit button
+                                            <button
+                                                type="button"
+                                                onClick={handleEditClick}
+                                                className="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600
+                                                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            >
+                                                Edit Profile
+                                            </button>
+                                        ) : (
+                                            // Edit/Create mode - Shows a cancel and save button
+                                            <>
+                                                {profileExists && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCancelEdit}
+                                                        className="py-2 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700
+                                                            bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="submit"
+                                                    disabled={saving}
+                                                    className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
+                                                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                                                        saving 
+                                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                                        : 'bg-blue-600 hover:bg-blue-700'
+                                                    }`}
+                                                >
+                                                    {saving ? 'Saving data...' : (profileExists ? 'Save Changes' : 'Create Profile')}
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </form>
@@ -726,7 +806,7 @@ const ProfilePage = () => {
                         <a
                             href="/volunteer/history"
                             className="inline-block bg-blue-600 shadow-sm text-sm font-medium text-white px-5 py-2
-        rounded-md hover:bg-blue-700 transition-colors"
+                                rounded-md hover:bg-blue-700 transition-colors"
                         >
                             View History
                         </a>

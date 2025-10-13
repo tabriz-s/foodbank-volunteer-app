@@ -51,7 +51,7 @@ const validateProfile = [
             }
             return true;
         }),
-
+    
     // Preferences validation (optional)
     body('preferences')
         .optional({ checkFalsy: true })
