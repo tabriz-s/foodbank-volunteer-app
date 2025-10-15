@@ -31,6 +31,9 @@ app.use('/api/test', require('./routes/test'));
 // Volunteer routes
 app.use('/api/volunteers', require('./routes/volunteers'));
 
+// Skill routes
+app.use('/api/skills', require('./routes/skills'));
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
