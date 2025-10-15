@@ -18,6 +18,7 @@ export const fetchProfile = async (userId) => {
 
         const data = await response.json();
 
+        // backend failure
         if (!response.ok) {
             throw new Error(data.message || 'Failed to fetch profile');
         }
@@ -25,6 +26,33 @@ export const fetchProfile = async (userId) => {
         return data;
     } catch (error) {
         console.error("Error fetching profile", error);
+        throw error;
+    }
+};
+
+// get skills (only skills)
+export const fetchSkills = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/skills`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        // backend failure
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to fetch skills');
+        }
+
+        // Backend returns: { success: true, count: 9, data: [...skills] }
+        // Extract just the skills array - response.data
+        return data.data; 
+    } catch (error) {
+        console.error('Error fetching skills:', error);
         throw error;
     }
 };
@@ -44,6 +72,7 @@ export const createProfile = async (profileData) => {
 
         const data = await response.json();
 
+        // backend failure
         if (!response.ok) {
             throw new Error(data.message || 'Failed to create profile');
         }
@@ -70,6 +99,7 @@ export const updateProfile = async (userId, profileData) => {
 
         const data = await response.json();
 
+        // backend failure
         if (!response.ok) {
             throw new Error(data.message || 'Failed to update profile');
         }
@@ -81,7 +111,7 @@ export const updateProfile = async (userId, profileData) => {
     }
 };
 
-/* DELETES */ // MAKE BACKEND ENDPOINTS FOR SKILLS
+/*
 // Fetch available skills ( I need to create backend enpoints for this.)
 export const fetchSkills = async () => {
     // For now, return mock data until you create the backend endpoint
@@ -97,3 +127,4 @@ export const fetchSkills = async () => {
         { Skills_id: 9, Description: 'First Aid Certification', Category: 'Safety' }
     ];
 };
+*/

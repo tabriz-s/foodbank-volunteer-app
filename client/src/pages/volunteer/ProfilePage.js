@@ -53,6 +53,16 @@ const ProfilePage = () => {
                         const fullName = `${volunteer.First_name} ${volunteer.Middle_name ? volunteer.Middle_name + ' ' : ''}${volunteer.Last_name}`.trim(); 
                         const availabilityDays = volunteer.Available_days ? volunteer.Available_days.split(',') : [];
                         
+                        // extract skills from backend response
+                        const volunteerSkills = volunteer.skills || [];
+
+                        // convert skills to fit frontend format
+                        const loadedSkills = volunteerSkills.map(skill => ({
+                            Skills_id: skill.Skills_id,
+                            Experience_level: skill.Experience_level,
+                            Date_acquired: skill.Date_acquired
+                        }));
+
                         // populate form with fetched data
                         const loadedProfileData = {
                             full_name: fullName,
@@ -62,10 +72,11 @@ const ProfilePage = () => {
                             city: volunteer.city || '',
                             state: volunteer.state || '',
                             zip_code: volunteer.zip_code || '',
-                            skills: [], // Need to fetch this from a join table later
+                            skills: loadedSkills, // skills loaded into the form
                             preferences: volunteer.Preferences || '',
                             availability_days: availabilityDays
                         };
+                        
                         
                         setProfileData(loadedProfileData); // set current data
                         setOriginalProfileData(loadedProfileData) // set original data in the event of canceling an update/edit
@@ -109,13 +120,37 @@ const ProfilePage = () => {
 
     // handle skill checkbox inputs
     const handleSkillToggle = (skillId) => {
+        setProfileData(prev => {
+            const existingSkill = prev.skills.find(s => s.Skills_id === skillId); // checking if skill exists
+
+            // checking and unchecking skills when clicked
+            if (existingSkill) {    // if skills exists, uncheck it
+                return {
+                    ...prev,
+                    skills: prev.skills.filter(s => s.Skills_id !== skillId)
+                };
+            } else {                // if skill does not exist, check it
+                const newSkill = {
+                    Skills_id: skillId,
+                    experience_level: 'beginner', // default if user doesn't select experience level
+                    Date_acquired: new Date().toISOString().split('T')[0] // default to current date if user does not select
+                };
+                return {
+                    ...prev,
+                    skills: [...prev.skills, newSkill]
+                };
+            }
+        });
+
+        /* old code
         setProfileData(prev => ({
             ...prev,
             skills: prev.skills.includes(skillId)
                 ? prev.skills.filter(id => id !== skillId)  // Remove if already selected
                 : [...prev.skills, skillId]                 // Add if not selected
         }));
-    }; 
+        */
+    };
 
     // handle day selection for availability
     const handleDayToggle = (day) => {
@@ -124,6 +159,30 @@ const ProfilePage = () => {
             availability_days: prev.availability_days.includes(day)
                 ? prev.availability_days.filter(d => d !== day)
                 : [...prev.availability_days, day]
+        }));
+    };
+
+    // Handle experience level change for a specific skill
+    const handleSkillExperienceChange = (skillId, newExperience) => {
+        setProfileData(prev => ({
+            ...prev,
+            skills: prev.skills.map(skill => 
+                skill.Skills_id === skillId
+                    ? { ...skill, Experience_level: newExperience } // Update this skill's experience
+                    : skill // Keep other skills unchanged
+            )
+        }));
+    };
+
+    // Handle date change for a specific skill
+    const handleSkillDateChange = (skillId, newDate) => {
+        setProfileData(prev => ({
+            ...prev,
+            skills: prev.skills.map(skill =>
+                skill.Skills_id === skillId
+                    ? { ...skill, Date_acquired: newDate } // Update this skill's date
+                    : skill // Keep other skills unchanged
+            )
         }));
     };
 
@@ -139,9 +198,35 @@ const ProfilePage = () => {
         newErrors.full_name = 'Full name must be 50 characters or less';
         }
 
-        // Skills validation - one skill is required
+        ///
+        // Skills validation - at least 1 skill is needed
         if (profileData.skills.length === 0) {
-        newErrors.skills = 'Please select at least one skill';
+            newErrors.skills = 'Please select at least one skill';
+        } else {
+            // Validate each skill has required fields
+            for (let i = 0; i < profileData.skills.length; i++) {
+                const skill = profileData.skills[i];
+                
+                // Check if Experience_level exists and is valid
+                const validLevels = ['beginner', 'intermediate', 'expert'];
+                if (!skill.Experience_level || !validLevels.includes(skill.Experience_level.toLowerCase())) {
+                    newErrors.skills = `Skill ${i + 1}: Please select an experience level`;
+                    break;
+                }
+                
+                // Check if Date_acquired exists and is valid
+                if (!skill.Date_acquired) {
+                    newErrors.skills = `Skill ${i + 1}: Please select a date acquired`;
+                    break;
+                }
+                
+                // Validate date format (YYYY-MM-DD)
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(skill.Date_acquired)) {
+                    newErrors.skills = `Skill ${i + 1}: Invalid date format`;
+                    break;
+                }
+            }
         }
 
         // Check address fields
@@ -532,7 +617,13 @@ const ProfilePage = () => {
     // display the users skillset
     const renderSkills = () => {
         const isReadOnly = profileExists && !isEditMode; // check if user is viewing or editing
-        
+        const isSkillSelected = (skillId) => {
+            return profileData.skills.some(s => s.Skills_id === skillId);   // check if skill(s) is selected
+        };
+        const getSkillDetails = (skillId) => {
+            return profileData.skills.find(s => s.Skills_id === skillId);   // get skill details if selected
+        };
+
         return (
             <div className="space-y-6">
                 <div>
@@ -545,21 +636,73 @@ const ProfilePage = () => {
                                 <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
                                     {category.replace('_', ' ')}
                                 </h4>
-                                <div className="space-y-3">
-                                    {skills.map((skill) => (
-                                        <label key={skill.Skills_id} className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={profileData.skills.includes(skill.Skills_id)}
-                                                onChange={() => handleSkillToggle(skill.Skills_id)}
-                                                disabled={isReadOnly}
-                                                className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
-                                                    isReadOnly ? 'cursor-not-allowed opacity-60' : ''
-                                                }`}
-                                            />
-                                            <span className="ml-3 text-sm text-gray-700">{skill.Description}</span>
-                                        </label>
-                                    ))}
+                                <div className="space-y-4">
+                                    {skills.map((skill) => {
+                                        const selected = isSkillSelected(skill.Skills_id);  // check if skill selected
+                                        const skillDetails = getSkillDetails(skill.Skills_id); // Get details of skills if selected
+
+                                        return (
+                                            <div key={skill.Skills_id} className="space-y-2">
+                                                {/* Checkbox Section of skills*/}
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selected}
+                                                        onChange={() => handleSkillToggle(skill.Skills_id)}
+                                                        disabled={isReadOnly}
+                                                        className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                                            isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+                                                        }`}
+                                                    />
+                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                        {skill.Description}
+                                                    </span>
+                                                </label>
+                                                
+                                                {/* Show experience and date inputs when skill is selected */}
+                                                {selected && (
+                                                    <div className="ml-7 space-y-2 p-3 bg-white rounded border border-gray-200">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {/* Experience Level Dropdown */}
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                    Experience Level <span className="text-red-500">*</span>
+                                                                </label>
+                                                                <select
+                                                                    value={skillDetails?.Experience_level || 'beginner'}
+                                                                    onChange={(e) => handleSkillExperienceChange(skill.Skills_id, e.target.value)}
+                                                                    disabled={isReadOnly}
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    }`}
+                                                                >
+                                                                    <option value="beginner">Beginner</option>
+                                                                    <option value="intermediate">Intermediate</option>
+                                                                    <option value="expert">Expert</option>
+                                                                </select>
+                                                            </div>
+                                                            
+                                                            {/* Date Acquired Picker */}
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                    Date Acquired <span className="text-red-500">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={skillDetails?.Date_acquired || ''}
+                                                                    onChange={(e) => handleSkillDateChange(skill.Skills_id, e.target.value)}
+                                                                    disabled={isReadOnly}
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    }`}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
