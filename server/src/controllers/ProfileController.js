@@ -1,7 +1,9 @@
 // file path| server\src\controllers\ProfileController.js
 // all of these would need authentiction for final product
 const Volunteer = require('../models/VolunteerModel');
+const VolunteerSkills = require('../models/VolunteerSkillsModel');
 
+//(GETS)
 // get all volunteers (admin use)
 const getAllVolunteers = async (req, res) => {
     try {
@@ -26,10 +28,11 @@ const getProfile = async (req, res) => {
     try{
         // in final product the user_id should come from a token of some kind
 
-        // mock userId
-        const userId = req.query.user_id || 1; // change the digit for testing
-        const volunteer = Volunteer.getVolunteerWithId(userId);
+        // mock userId - get a specific user
+        const userId = req.query.user_id || 1;       // change the digit for testing
+        const volunteer = Volunteer.getVolunteerWithUser_id(userId); // get a volunteers data
 
+        // user doesnt exist error
         if (!volunteer) {
             return res.status(404).json({
                 success: false,
@@ -37,9 +40,16 @@ const getProfile = async (req, res) => {
             });
         }
 
+        // get users skills
+        const skills = VolunteerSkills.getVolunteerSkillsWithDetails(volunteer.Volunteer_id); // full details for a user
+        const profileData = {
+            ...volunteer,
+            skills: skills // add skills array in addition to the rest of the user data.
+        }
+
         res.status(200).json({
             success: true,
-            data: volunteer
+            data: profileData
         });
     } catch (error) {
         res.status(500).json({
@@ -50,7 +60,7 @@ const getProfile = async (req, res) => {
     }
 };
 
-//post
+//(POSTS)
 // create a new user profile
 const createProfile = async (req, res) => {
     try {
@@ -103,12 +113,23 @@ const createProfile = async (req, res) => {
             Preferences: preferences || ''
         };
 
-        const newVolunteer = Volunteer.createVolunteer(volunteerData);
+        const newVolunteer = Volunteer.createVolunteer(volunteerData); // new volunteer saved
+        // save new users skill
+        if (skills && skills.length > 0) {
+            VolunteerSkills.replaceVolunteerSkills(newVolunteer.Volunteer_id, skills);
+        }
+
+        // create a complete profile (user details and their skills) to return
+        const savedSkills = VolunteerSkills.getVolunteerSkillsWithDetails(newVolunteer.Volunteer_id);
+        const completeProfile = {
+            ...newVolunteer,
+            skills: savedSkills
+        };
 
         res.status(201).json({
             success: true,
             message: 'Profile created successfully',
-            data: newVolunteer
+            data: completeProfile
         });
     } catch (error) {
         res.status(500).json({
@@ -119,10 +140,11 @@ const createProfile = async (req, res) => {
     }
 };
 
+//(PUTS)
 // Update volunteer profile
 const updateProfile = async (req, res) => {
     try {
-        // In real app, user_id comes from JWT
+        // In real app, user_id comes from JWT or other type of token
         const userId = req.query.user_id || req.body.user_id || 1;
 
         const volunteer = Volunteer.getVolunteerWithUser_id(userId);
@@ -167,12 +189,25 @@ const updateProfile = async (req, res) => {
         if (skills) updates.Skilled_volunteer = skills.length > 0;
         if (availability_days) updates.Available_days = availability_days.join(',');
 
+        // update user info
         const updatedVolunteer = Volunteer.updateVolunteer(volunteer.Volunteer_id, updates);
+
+        // update user skills 
+        if (skills !== undefined) {
+            VolunteerSkills.replaceVolunteerSkills(volunteer.Volunteer_id, skills);
+        }
+
+        // create a complete profile of the update
+        const savedSkills = VolunteerSkills.getVolunteerSkillsWithDetails(volunteer.Volunteer_id);
+        const completeProfile = {
+            ...updatedVolunteer,
+            skills: savedSkills
+        };
 
         res.status(200).json({
             success: true,
             message: 'Profile updated successfully',
-            data: updatedVolunteer
+            data: completeProfile
         });
     } catch (error) {
         res.status(500).json({
@@ -183,12 +218,15 @@ const updateProfile = async (req, res) => {
     }
 };
 
+// (DELETE)
 // delete a volunteer (admin use)
 const deleteVolunteer = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const deleted = Volunteer.deleteVolunteer(id);
+        VolunteerSkills.deleteAllVolunteerSkills(id); // delete skill(s)
+
+        const deleted = Volunteer.deleteVolunteer(id); // delete user
 
         if (!deleted) {
             return res.status(404).json({

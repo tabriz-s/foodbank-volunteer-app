@@ -42,13 +42,42 @@ const validateProfile = [
         .notEmpty().withMessage('Zip code is required')
         .matches(/^\d{5}(-\d{4})?$/).withMessage('Zip code must be in format 12345 or 12345-6789'),
     
-    // Skills validation (array of IDs)
+    // Skills validation 
     body('skills')
         .isArray({ min: 1 }).withMessage('Please select at least one skill')
         .custom((value) => {
-            if (!value.every(id => Number.isInteger(id))) {
-                throw new Error('Skills must be an array of integers');
+            // Check that skills is an array of objects
+            if (!Array.isArray(value)) {
+                throw new Error('Skills must be an array');
             }
+
+            // Each skill must be an object with required fields
+            for (let i = 0; i < value.length; i++) {
+                const skill = value[i];
+
+                // Check Skills_id exists and is a number
+                if (!skill.Skills_id || !Number.isInteger(skill.Skills_id)) {
+                    throw new Error(`Skill at index ${i}: Skills_id must be an integer`);
+                }
+
+                // Check Experience_level exists and is valid
+                const validLevels = ['beginner', 'intermediate', 'expert'];
+                if (!skill.Experience_level || !validLevels.includes(skill.Experience_level.toLowerCase())) {
+                    throw new Error(`Skill at index ${i}: Experience_level must be 'beginner', 'intermediate', or 'expert'`);
+                }
+
+                // Check Date_acquired exists and is a valid date format
+                if (!skill.Date_acquired) {
+                    throw new Error(`Skill at index ${i}: Date_acquired is required`);
+                }
+
+                // Validate date format (YYYY-MM-DD)
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(skill.Date_acquired)) {
+                    throw new Error(`Skill at index ${i}: Date_acquired must be in format YYYY-MM-DD`);
+                }
+            }
+
             return true;
         }),
     
