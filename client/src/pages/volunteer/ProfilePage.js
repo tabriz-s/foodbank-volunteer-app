@@ -306,12 +306,10 @@ const ProfilePage = () => {
 
             if (profileExists) {
                 // update the data (PUT)
-                console.log("🔵 Sending UPDATE request with data:", profileData); // debugging
                 response = await updateProfile(CURRENT_USER_ID, profileData);
-                console.log("🔵 UPDATE response received:", response); // debugging
 
                 if (response.success) {
-                    console.log("✅ Update successful!"); // debugging
+
                     setOriginalProfileData({...profileData});
                     setIsEditMode(false); // done editing/updating - back to view mode
                     setSuccess(true);
@@ -320,21 +318,17 @@ const ProfilePage = () => {
                     setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
                 } else {
                     // handle the backend returning false
-                    console.log("❌ Update failed:", response); // debugging
                     setErrors({ submit: response.message || 'Failed to update profile.' })
                 }
                 
             } else {
                 // create a new profile - new user
-                console.log("🟢 Sending CREATE request with data:", profileData); // debugging
                 response = await createProfile({
                     ...profileData,
                     user_id: CURRENT_USER_ID // should be a new user.
                 });
-                console.log("🟢 CREATE response received:", response); // debugging
 
                 if (response.success) {
-                    console.log("✅ Create successful!"); // debugging
                     setOriginalProfileData({...profileData}); // store new profile 
                     setProfileExists(true); // profile created so make true
                     setIsEditMode(false); // done editing/updating - back to view mode
@@ -344,13 +338,11 @@ const ProfilePage = () => {
                     setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
                 } else {
                     // Handle backend returning success: false
-                     console.log("❌ Create failed:", response); // debugging
                     setErrors({ submit: response.message || 'Failed to create profile.' });
                 }
             }
 
         } catch (error) {
-            console.error('🔴 Caught error:', error); // debugging
             console.error('Error saving profile:', error);
             setErrors({ submit: error.message || 'Failed to save profile. Please try again.' });
         } finally {
