@@ -34,6 +34,9 @@ app.use('/api/volunteers', require('./routes/volunteers'));
 // Skill routes
 app.use('/api/skills', require('./routes/skills'));
 
+// Volunteer history routes
+app.use('/api', require('./routes/history'));
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
