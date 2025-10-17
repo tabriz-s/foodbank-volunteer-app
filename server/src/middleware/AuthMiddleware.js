@@ -4,9 +4,9 @@
 function mockAuth(req, res, next) {
     const authHeader = req.headers.authorization;
 
-    // Testing as volunteer or admin 
+    // Testing as volunteer or admin
     if (!authHeader) {
-        req.user = { id: 98, role: "admin" };
+        req.user = { id: 1, role: "volunteer" };
         return next();
     }
 
