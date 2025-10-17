@@ -92,5 +92,6 @@ module.exports = {
     getVolunteerWithUser_id,
     createVolunteer,
     updateVolunteer,
-    deleteVolunteer
+    deleteVolunteer,
+    volunteers
 };
