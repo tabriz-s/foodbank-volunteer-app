@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,7 +25,7 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -54,39 +58,64 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setLoading(true);
-    
+
     try {
-      // TODO: Implement actual Firebase authentication
-      console.log('Login attempt:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For now, just show success and redirect
-      // In real implementation, this would handle Firebase auth
-      alert('Login functionality will be implemented with Firebase authentication');
-      
-      // Redirect based on user type (this would come from Firebase/backend)
-      // navigate('/volunteer/dashboard'); // or '/admin/dashboard'
-      
+      // Login with Firebase
+      const { user, role } = await login(formData.email, formData.password);
+
+      console.log('Login successful:', { user: user.email, role });
+
+      // Redirect based on role or previous location
+      const from = location.state?.from?.pathname || getDashboardPath(role);
+      navigate(from, { replace: true });
+
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ submit: 'Login failed. Please try again.' });
+
+      // Handle specific Firebase errors
+      let errorMessage = 'Login failed. Please try again.';
+
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email address.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address format.';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = 'This account has been disabled.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed login attempts. Please try again later.';
+      }
+
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDashboardPath = (role) => {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'employee':
+        return '/employee/dashboard';
+      case 'volunteer':
+        return '/volunteer/dashboard';
+      default:
+        return '/';
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        {/* Container */}
+        {/* Card Container */}
         <div className="bg-white shadow-xl rounded-2xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
@@ -96,13 +125,20 @@ const Login = () => {
             <h2 className="text-3xl font-bold text-gray-900">
               Welcome back
             </h2>
-            {/* <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-600">
               Don't have an account?{' '}
               <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                 Sign up here
               </Link>
-            </p> */}
+            </p>
           </div>
+
+          {/* Show message from protected route */}
+          {location.state?.message && (
+            <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">{location.state.message}</p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -119,11 +155,10 @@ const Login = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    errors.email 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                  className={`w-full px-4 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.email
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                       : 'border-gray-300 focus:border-blue-500'
-                  }`}
+                    }`}
                   placeholder="Enter your email"
                 />
               </div>
@@ -148,11 +183,10 @@ const Login = () => {
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pr-12 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    errors.password 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                  className={`w-full px-4 py-3 pr-12 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${errors.password
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                       : 'border-gray-300 focus:border-blue-500'
-                  }`}
+                    }`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -190,9 +224,13 @@ const Login = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                <button
+                  type="button"
+                  onClick={(e) => e.preventDefault()}
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                >
                   Forgot your password?
-                </a>
+                </button>
               </div>
             </div>
 
@@ -228,7 +266,7 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">New to Singh's Generosity?</span>
+                <span className="px-2 bg-white text-gray-500">New to VolunteerHub?</span>
               </div>
             </div>
 
@@ -244,15 +282,6 @@ const Login = () => {
           </form>
         </div>
 
-        {/* Footer */}
-        {/* <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            By signing in, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-500">Terms of Service</a>
-            {' '}and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-500">Privacy Policy</a>
-          </p>
-        </div> */}
       </div>
     </div>
   );
