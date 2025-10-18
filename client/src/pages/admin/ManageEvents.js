@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { NotificationContext } from '../../contexts/NotificationContext';
+import { fetchAllEvents, createEvent, deleteEvent, updateEvent } from '../../services/eventAPI';
 
 const ManageEvents = () => {
     // data req. for creating events
@@ -10,7 +11,7 @@ const ManageEvents = () => {
         requiredSkills: [],
         urgency: '',
         eventDate: ''
-});
+    });
     
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -19,52 +20,34 @@ const ManageEvents = () => {
     const [existingEvents, setExistingEvents] = useState([]);
     const [activeSection, setActiveSection] = useState('create-event');
     
-// Get notification functions
-const { addNotification } = useContext(NotificationContext);
+    // NEW: Edit modal state
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState(null);
     
-// skill sets as profile page
+    // Get notification functions
+    const { addNotification } = useContext(NotificationContext);
     
-useEffect(() => {
-        setAvailableSkills([
-            { Skills_id: 1, Description: 'Cooking', Category: 'Food_Preparation' },
-            { Skills_id: 2, Description: 'Food Safety Certification', Category: 'Food_Preparation' },
-            { Skills_id: 3, Description: 'Heavy Lifting', Category: 'Warehouse' },
-            { Skills_id: 4, Description: 'Inventory Management', Category: 'Warehouse' },
-            { Skills_id: 5, Description: 'CDL License', Category: 'Transportation' },
-            { Skills_id: 6, Description: 'Safe Driving', Category: 'Transportation' },
-            { Skills_id: 7, Description: 'Customer Service', Category: 'Distribution' },
-            { Skills_id: 8, Description: 'Spanish Speaking', Category: 'Communication' },
-            { Skills_id: 9, Description: 'First Aid Certification', Category: 'Safety' }
-]);
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                // Fetch skills directly from backend
+                const skillsResponse = await fetch('http://localhost:3001/api/skills');
+                const skillsData = await skillsResponse.json();
+                setAvailableSkills(skillsData.data);
+                
+                const events = await fetchAllEvents();
+                setExistingEvents(events);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        };
+        
+        loadData();
+    }, []);
 
-// mock data will be replaced with API calls
-setExistingEvents([
-           {
-                id: 1,
-                name: 'UH Food Bank Distribution',
-                description: 'Help distribute food packages to University of Houston students and families',
-                location: 'University of Houston Student Center, University Dr, Houston, TX 77204',
-                urgency: 'Medium',
-                date: '2025-02-15',
-                requiredSkills: [1, 7]
-           },
-           {
-                id: 2,
-                name: 'Houston Food Bank Warehouse Sort',
-                description: 'Sort and organize donated food items in the main warehouse facility',
-                location: 'Houston Food Bank, Houston, TX 77029',
-                urgency: 'Low',
-                date: '2025-02-20',
-                requiredSkills: [3, 4]
-           }
-        ]);
-}, []);
-
-const sidebarItems = [
-        {
-            id: 'create-event',label: 'Create Event'},
-        {
-            id: 'manage-events',label: 'Manage Events'}
+    const sidebarItems = [
+        { id: 'create-event', label: 'Create Event' },
+        { id: 'manage-events', label: 'Manage Events' }
     ];
 
     // urgency dropdown
@@ -87,21 +70,22 @@ const sidebarItems = [
             setErrors(prev => ({
                 ...prev,
                 [name]: ''
-           }));
+            }));
         }
     };
+
     // handle skill checkboxes
     const handleSkillToggle = (skillId) => {
         setEventData(prev => ({
             ...prev,
             requiredSkills: prev.requiredSkills.includes(skillId)
-                ? prev.requiredSkills.filter(id => id !== skillId)  // remove if already checked else add
+                ? prev.requiredSkills.filter(id => id !== skillId)
                 : [...prev.requiredSkills, skillId]                 
         }));
-};
+    };
 
-// Check if any form errors
-const validateForm = () => {
+    // Check if any form errors
+    const validateForm = () => {
         const newErrors = {};
         if (!eventData.eventName.trim()) {
             newErrors.eventName = 'Event name is required';
@@ -131,44 +115,37 @@ const validateForm = () => {
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-};
+    };
 
-// submit form to create event
-    
-const handleSubmit = async (event) => {
-       event.preventDefault();
-       if (!validateForm()) return;
-
+    // submit form to create event - CALLS BACKEND
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!validateForm()) return;
 
         setLoading(true);
         setSuccess(false);
         try {
-            // simulating API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await createEvent({
+                name: eventData.eventName,
+                description: eventData.eventDescription,
+                location: eventData.location,
+                requiredSkills: eventData.requiredSkills,
+                urgency: eventData.urgency,
+                date: eventData.eventDate
+            });
             
             setSuccess(true);
-            console.log('Event saved:', eventData);
+            console.log('Event created:', result.data);
 
-            // notification pops up
             addNotification({
                 type: "success",
                 message: `Event "${eventData.eventName}" created successfully!`,
                 time: "Just now"
             });
 
-            const newEvent = {
-                id: existingEvents.length + 1,
-                name: eventData.eventName,
-                description: eventData.eventDescription,
-                location: eventData.location,
-                urgency: eventData.urgency,
-                date: eventData.eventDate,
-                requiredSkills: eventData.requiredSkills
-            };
-
-            setExistingEvents(prev => [...prev, newEvent]);
+            setExistingEvents(prev => [...prev, result.data]);
             
-	   // Clear form
+            // Clear form
             setEventData({
                 eventName: '',
                 eventDescription: '',
@@ -184,38 +161,127 @@ const handleSubmit = async (event) => {
         } finally {
             setLoading(false);
         }
-};
+    };
 
-// delete event from list
-const handleDeleteEvent = (eventId) => {
-        if (window.confirm('Are you sure you want to delete this event?')) {
-            setExistingEvents(prev => prev.filter(event => event.id !== eventId));
+    // NEW: Open edit modal and populate form
+    const handleEditClick = (event) => {
+        setEditingEvent(event);
+        setEventData({
+            eventName: event.name,
+            eventDescription: event.description,
+            location: event.location,
+            requiredSkills: event.requiredSkills,
+            urgency: event.urgency,
+            eventDate: event.date
+        });
+        setIsEditModalOpen(true);
+        setErrors({});
+    };
+
+    // NEW: Submit edit form
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        setLoading(true);
+        try {
+            const result = await updateEvent(editingEvent.Event_id, {
+                name: eventData.eventName,
+                description: eventData.eventDescription,
+                location: eventData.location,
+                requiredSkills: eventData.requiredSkills,
+                urgency: eventData.urgency,
+                date: eventData.eventDate
+            });
+
+            // Update the event in the list
+            setExistingEvents(prev => 
+                prev.map(evt => 
+                    evt.Event_id === editingEvent.Event_id ? result.data : evt
+                )
+            );
+
             addNotification({
-                type: "info",
-                message: "Event deleted successfully",
+                type: "success",
+                message: `Event "${eventData.eventName}" updated successfully!`,
                 time: "Just now"
-          });
-      }
-};
- 
-const getSkillName = (skillId) => {
+            });
+
+            // Close modal and reset
+            setIsEditModalOpen(false);
+            setEditingEvent(null);
+            setEventData({
+                eventName: '',
+                eventDescription: '',
+                location: '',
+                requiredSkills: [],
+                urgency: '',
+                eventDate: ''
+            });
+
+        } catch (error) {
+            console.error('Error updating event:', error);
+            setErrors({ submit: 'Failed to update event. Please try again.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // NEW: Cancel edit
+    const handleCancelEdit = () => {
+        setIsEditModalOpen(false);
+        setEditingEvent(null);
+        setEventData({
+            eventName: '',
+            eventDescription: '',
+            location: '',
+            requiredSkills: [],
+            urgency: '',
+            eventDate: ''
+        });
+        setErrors({});
+    };
+
+    // delete event from backend
+    const handleDeleteEvent = async (eventId) => {
+        if (window.confirm('Are you sure you want to delete this event?')) {
+            try {
+                await deleteEvent(eventId);
+                
+                setExistingEvents(prev => prev.filter(event => event.Event_id !== eventId));
+                
+                addNotification({
+                    type: "info",
+                    message: "Event deleted successfully",
+                    time: "Just now"
+                });
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                addNotification({
+                    type: "error",
+                    message: "Failed to delete event",
+                    time: "Just now"
+                });
+            }
+        }
+    };
+
+    const getSkillName = (skillId) => {
         const skill = availableSkills.find(s => s.Skills_id === skillId);
         return skill ? skill.Description : 'Unknown Skill';
-};
+    };
 
-
-// group skills by category for better organization
-const skillsByCategory = availableSkills.reduce((acc, skill) => {
+    // group skills by category for better organization
+    const skillsByCategory = availableSkills.reduce((acc, skill) => {
         if (!acc[skill.Category]) {
             acc[skill.Category] = [];
         }
         acc[skill.Category].push(skill);
         return acc;
-}, {});
-    
-// Form for new events
-    
-const renderCreateEvent = () => (
+    }, {});
+
+    // Form fields component (reused for create and edit)
+    const renderFormFields = () => (
         <div className="space-y-6">
             <div>
                 <label htmlFor="eventName" className="block text-sm font-medium text-gray-700 mb-2">
@@ -359,10 +425,13 @@ const renderCreateEvent = () => (
                 </div>
             </div>
         </div>
-);
+    );
 
-// Show existing events that can be managed
-const renderManageEvents = () => (
+    // Form for new events
+    const renderCreateEvent = () => renderFormFields();
+
+    // Show existing events that can be managed
+    const renderManageEvents = () => (
         <div className="space-y-6">
             <div className="bg-white border border-gray-200 rounded-lg">
                 <div className="px-6 py-4 border-b border-gray-200">
@@ -375,7 +444,7 @@ const renderManageEvents = () => (
                         </div>
                     ) : (
                         existingEvents.map((event) => (
-                            <div key={event.id} className="px-6 py-4">
+                            <div key={event.Event_id || event.id} className="px-6 py-4">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <h4 className="text-lg font-medium text-gray-900">{event.name}</h4>
@@ -398,13 +467,13 @@ const renderManageEvents = () => (
                                     </div>
                                     <div className="flex space-x-2 ml-4">
                                         <button
-                                            onClick={() => alert('Edit functionality would go here')}
+                                            onClick={() => handleEditClick(event)}
                                             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                         >
                                             Edit
                                         </button>
                                         <button
-                                            onClick={() => handleDeleteEvent(event.id)}
+                                            onClick={() => handleDeleteEvent(event.Event_id || event.id)}
                                             className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                         >
                                             Delete
@@ -416,11 +485,11 @@ const renderManageEvents = () => (
                     )}
                 </div>
             </div>
-       </div>
-);
+        </div>
+    );
 
-// Switch between create and manage sections
-const renderContent = () => {
+    // Switch between create and manage sections
+    const renderContent = () => {
         switch (activeSection) {
             case 'create-event':
                 return renderCreateEvent();
@@ -429,14 +498,57 @@ const renderContent = () => {
             default:
                 return renderCreateEvent();
         }
-};
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* Edit Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-medium text-gray-900">Edit Event</h3>
+                            <button
+                                onClick={handleCancelEdit}
+                                className="text-gray-400 hover:text-gray-500"
+                            >
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSubmit}>
+                            {renderFormFields()}
+                            {errors.submit && (
+                                <p className="mt-3 text-sm text-red-600">{errors.submit}</p>
+                            )}
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                                        loading 
+                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                        : 'bg-blue-600 hover:bg-blue-700'
+                                    }`}
+                                >
+                                    {loading ? 'Updating...' : 'Update Event'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
                     <div className="bg-white shadow rounded-lg">
                         <div className="divide-y divide-gray-200 lg:grid lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
-
                             {/* Sidebar */}
                             <aside className="py-6 lg:col-span-3">
                                 <nav className="space-y-1">
@@ -444,7 +556,6 @@ const renderContent = () => {
                                         <h1 className="text-2xl font-bold text-gray-900">Event Management</h1>
                                         <p className="mt-1 text-sm text-gray-600">Create and manage volunteer events</p>
                                     </div>
-                                    {/* Navigation buttons */}
                                     {sidebarItems.map((item) => (
                                         <button
                                             key={item.id}
@@ -487,7 +598,6 @@ const renderContent = () => {
                                     {renderContent()}
                                 </div>
 
-                                {/* Submit button only shows on create event section */}
                                 {activeSection === 'create-event' && (
                                     <div className="pt-6 px-4 sm:px-6">
                                         {errors.submit && (
