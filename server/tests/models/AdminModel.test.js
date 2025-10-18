@@ -1,4 +1,4 @@
-const AdminModel = require('../src/models/AdminModel');
+const AdminModel = require('../../src/models/AdminModel');
 describe('AdminModel', () => {
     describe('getDashboardStats', () => {
         test('should return an object with stats', () => {

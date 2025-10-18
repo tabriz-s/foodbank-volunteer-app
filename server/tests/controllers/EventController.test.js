@@ -1,5 +1,5 @@
-const EventController = require('../src/controllers/EventController');
-const EventModel = require('../src/models/EventModel');
+const EventController = require('../../src/controllers/EventController');
+const EventModel = require('../../src/models/EventModel');
 
 describe('EventController', () => {
 

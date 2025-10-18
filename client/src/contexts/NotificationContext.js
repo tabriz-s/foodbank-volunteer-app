@@ -1,36 +1,64 @@
 import React, { createContext, useState, useEffect } from "react";
+import {
+    getNotifications,
+    createNotification,
+    markNotificationAsRead,
+    deleteNotification,
+} from "../services/NotificationAPI";
 
 // Create Context
 export const NotificationContext = createContext();
 
-export const NotificationProvider = ({ children }) => {
+export const NotificationProvider = ({ children, user }) => {
 
-    const [notifications, setNotifications] = useState(() => {
-        const stored = localStorage.getItem("notifications");
-        return stored ? JSON.parse(stored) : [];
-    });
+    const [notifications, setNotifications] = useState([]);
+    const role = user?.role || "admin"; // “admin” or “volunteer”
+    const userId = user?.id || 1; // fallback for mock data
 
-    // Save to local storage whenever notifications change
+    // Load notifications from backend
     useEffect(() => {
-        localStorage.setItem("notifications", JSON.stringify(notifications));
-    }, [notifications]);
+        const fetchData = async () => {
+            const res = await getNotifications(role, userId);
+            if (res.success) setNotifications(res.data);
+        };
+        fetchData();
+    }, [role, userId]);
 
-    // Add a new notification
-    const addNotification = (notification) => {
-        setNotifications((prev) => [
-            { id: Date.now(), ...notification }, // auto-generate ID
-            ...prev,
-        ]);
+    // Add a notification
+    const addNotification = async (notification) => {
+        // Update local UI immediately
+        const newNote = {
+            id: Date.now(),
+            message: notification.message,
+            type: notification.type || "general",
+            read: false,
+            timestamp: new Date().toISOString(),
+        };
+        setNotifications((prev) => [newNote, ...prev]);
+
+        // Send to backend for persistence
+        await createNotification({
+            recipientType: notification.recipientType || role,
+            recipientId: notification.recipientId || userId,
+            message: notification.message,
+        });
     };
 
-    // Remove notification
-    const dismissNotification = (id) => {
-        setNotifications((prev) => prev.filter((note) => note.id !== id));
+    const markAsRead = async (id) => {
+        await markNotificationAsRead(id);
+        setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        );
+    };
+
+    const removeNotification = async (id) => {
+        await deleteNotification(id);
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
     };
 
     return (
         <NotificationContext.Provider
-            value={{ notifications, addNotification, dismissNotification }}
+            value={{ notifications, setNotifications, addNotification, markAsRead, removeNotification }}
         >
             {children}
         </NotificationContext.Provider>

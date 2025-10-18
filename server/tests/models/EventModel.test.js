@@ -1,4 +1,4 @@
-const EventModel = require('../src/models/EventModel');
+const EventModel = require('../../src/models/EventModel');
 
 describe('EventModel', () => {
 

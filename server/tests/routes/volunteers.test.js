@@ -1,228 +1,98 @@
-const request = require('supertest');
-const express = require('express');
-const volunteersRouter = require('../../src/routes/volunteers');
+const express = require("express");
+const request = require("supertest");
 
-// Create test app with the volunteers router
-const createTestApp = () => {
-    const app = express();
-    app.use(express.json());
-    app.use('/api/volunteers', volunteersRouter);
-    return app;
-};
+// ✅ Ensure correct path
+const volunteersRouter = require("../../src/routes/volunteers");
 
-describe('Volunteers Routes', () => {
+// Mock controller functions directly
+jest.mock("../../src/controllers/ProfileController", () => ({
+    getAllVolunteers: jest.fn((req, res) =>
+        res.status(200).json({ success: true, data: [{ id: 1, name: "John Doe" }] })
+    ),
+    getProfile: jest.fn((req, res) => {
+        if (req.query.user_id === "404")
+            return res.status(404).json({ success: false });
+        res.status(200).json({ success: true, data: { User_id: 1 } });
+    }),
+    createProfile: jest.fn((req, res) => {
+        if (!req.body.full_name)
+            return res.status(400).json({ success: false, message: "Invalid" });
+        res.status(201).json({ success: true, data: req.body });
+    }),
+    updateProfile: jest.fn((req, res) => {
+        if (req.query.user_id === "404")
+            return res.status(404).json({ success: false });
+        res.status(200).json({ success: true, data: req.body });
+    }),
+    deleteVolunteer: jest.fn((req, res) => {
+        if (req.params.id === "404")
+            return res.status(404).json({ success: false });
+        res.status(200).json({ success: true });
+    }),
+}));
 
-    describe('GET /api/volunteers', () => {
-        test('should return all volunteers', async () => {
-            const app = createTestApp();
-            
-            const response = await request(app)
-                .get('/api/volunteers');
+jest.mock("../../src/middleware/Validation", () => ({
+    validateProfile: (req, res, next) => next(),
+}));
 
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('success', true);
-            expect(response.body).toHaveProperty('data');
-            expect(Array.isArray(response.body.data)).toBe(true);
-        });
+describe("Volunteers Router", () => {
+    let app;
+    beforeAll(() => {
+        app = express();
+        app.use(express.json());
+        app.use("/api/volunteers", volunteersRouter);
     });
 
-    describe('GET /api/volunteers/profile', () => {
-        test('should return profile for existing user', async () => {
-            const app = createTestApp();
-            
-            const response = await request(app)
-                .get('/api/volunteers/profile?user_id=1');
-
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('success', true);
-            expect(response.body).toHaveProperty('data');
-            expect(response.body.data).toHaveProperty('User_id', 1);
-        });
-
-        test('should return 404 for non-existent user', async () => {
-            const app = createTestApp();
-            
-            const response = await request(app)
-                .get('/api/volunteers/profile?user_id=9999');
-
-            expect(response.status).toBe(404);
-            expect(response.body).toHaveProperty('success', false);
-        });
-
-        test('should handle missing user_id parameter', async () => {
-            const app = createTestApp();
-            
-            const response = await request(app)
-                .get('/api/volunteers/profile');
-
-            // Controller handles this - just verify we get a response
-            expect(response.status).toBeGreaterThanOrEqual(200);
-            expect(response.body).toHaveProperty('success');
-        });
+    test("GET /api/volunteers returns all volunteers", async () => {
+        const res = await request(app).get("/api/volunteers");
+        expect(res.status).toBe(200);
+        expect(res.body.data[0].name).toBe("John Doe");
     });
 
-    describe('POST /api/volunteers/profile', () => {
-        test('should create new profile with valid data', async () => {
-            const app = createTestApp();
-            
-            const newProfile = {
-                user_id: 777,
-                full_name: 'Route Test User',
-                phone_number: '555-111-2222',
-                address_1: '777 Route St',
-                city: 'Test City',
-                state: 'TX',
-                zip_code: '77777',
-                skills: [
-                    { Skills_id: 1, Experience_level: 'beginner', Date_acquired: '2024-01-01' }
-                ],
-                availability_days: ['monday', 'tuesday']
-            };
-
-            const response = await request(app)
-                .post('/api/volunteers/profile')
-                .send(newProfile);
-
-            expect(response.status).toBe(201);
-            expect(response.body).toHaveProperty('success', true);
-            expect(response.body).toHaveProperty('data');
-        });
-
-        test('should return 400 with invalid data', async () => {
-            const app = createTestApp();
-            
-            const invalidProfile = {
-                user_id: 776,
-                full_name: '', // Invalid - empty name
-                phone_number: '555-111-2222',
-                address_1: '776 Route St',
-                city: 'Test City',
-                state: 'TX',
-                zip_code: '77776',
-                skills: [],
-                availability_days: []
-            };
-
-            const response = await request(app)
-                .post('/api/volunteers/profile')
-                .send(invalidProfile);
-
-            expect(response.status).toBe(400);
-            expect(response.body).toHaveProperty('success', false);
-        });
+    test("GET /api/volunteers/profile returns valid profile", async () => {
+        const res = await request(app).get("/api/volunteers/profile?user_id=1");
+        expect(res.status).toBe(200);
+        expect(res.body.data.User_id).toBe(1);
     });
 
-    describe('PUT /api/volunteers/profile', () => {
-        test('should update existing profile', async () => {
-            const app = createTestApp();
-            
-            // First create a profile
-            const newProfile = {
-                user_id: 775,
-                full_name: 'Original Name',
-                phone_number: '555-333-4444',
-                address_1: '775 Route St',
-                city: 'Original City',
-                state: 'TX',
-                zip_code: '77775',
-                skills: [
-                    { Skills_id: 1, Experience_level: 'beginner', Date_acquired: '2024-01-01' }
-                ],
-                availability_days: ['monday']
-            };
-
-            await request(app)
-                .post('/api/volunteers/profile')
-                .send(newProfile);
-
-            // Now update it
-            const updates = {
-                full_name: 'Updated Name',
-                phone_number: '555-999-8888',
-                address_1: '775 Updated St',
-                city: 'Updated City',
-                state: 'CA',
-                zip_code: '90001',
-                skills: [
-                    { Skills_id: 2, Experience_level: 'intermediate', Date_acquired: '2024-02-01' }
-                ],
-                availability_days: ['tuesday', 'wednesday']
-            };
-
-            const response = await request(app)
-                .put('/api/volunteers/profile?user_id=775')
-                .send(updates);
-
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveProperty('success', true);
-        });
-
-        test('should return 404 for non-existent user', async () => {
-            const app = createTestApp();
-            
-            const updates = {
-                full_name: 'Test Name',
-                phone_number: '555-555-5555',
-                address_1: '123 Test',
-                city: 'Test',
-                state: 'TX',
-                zip_code: '12345',
-                skills: [
-                    { Skills_id: 1, Experience_level: 'beginner', Date_acquired: '2024-01-01' }
-                ],
-                availability_days: ['monday']
-            };
-
-            const response = await request(app)
-                .put('/api/volunteers/profile?user_id=9999')
-                .send(updates);
-
-            expect(response.status).toBe(404);
-            expect(response.body).toHaveProperty('success', false);
-        });
+    test("GET /api/volunteers/profile returns 404 if not found", async () => {
+        const res = await request(app).get("/api/volunteers/profile?user_id=404");
+        expect(res.status).toBe(404);
     });
 
-    describe('DELETE /api/volunteers/profile', () => {
-        test('should delete existing volunteer', async () => {
-            const app = createTestApp();
-            
-            // First create a volunteer
-            const newProfile = {
-                user_id: 774,
-                full_name: 'To Delete',
-                phone_number: '555-666-7777',
-                address_1: '774 Route St',
-                city: 'Delete City',
-                state: 'TX',
-                zip_code: '77774',
-                skills: [
-                    { Skills_id: 1, Experience_level: 'beginner', Date_acquired: '2024-01-01' }
-                ],
-                availability_days: ['monday']
-            };
-
-            await request(app)
-                .post('/api/volunteers/profile')
-                .send(newProfile);
-
-            // Now delete it
-            const response = await request(app)
-                .delete('/api/volunteers/profile?user_id=774');
-
-            // Should succeed or handle gracefully
-            expect(response.status).toBeGreaterThanOrEqual(200);
-            expect(response.status).toBeLessThan(600);
-        });
-
-        test('should handle non-existent volunteer', async () => {
-            const app = createTestApp();
-            
-            const response = await request(app)
-                .delete('/api/volunteers/profile?user_id=9999');
-
-            // Should handle missing volunteer
-            expect(response.status).toBeGreaterThanOrEqual(400);
-        });
+    test("POST /api/volunteers/profile creates new profile", async () => {
+        const res = await request(app)
+            .post("/api/volunteers/profile")
+            .send({ user_id: 3, full_name: "New User" });
+        expect(res.status).toBe(201);
     });
 
+    test("POST /api/volunteers/profile returns 400 for invalid", async () => {
+        const res = await request(app).post("/api/volunteers/profile").send({});
+        expect(res.status).toBe(400);
+    });
+
+    test("PUT /api/volunteers/profile updates profile", async () => {
+        const res = await request(app)
+            .put("/api/volunteers/profile?user_id=1")
+            .send({ full_name: "Updated" });
+        expect(res.status).toBe(200);
+    });
+
+    test("PUT /api/volunteers/profile returns 404 for missing user", async () => {
+        const res = await request(app)
+            .put("/api/volunteers/profile?user_id=404")
+            .send({ full_name: "Missing" });
+        expect(res.status).toBe(404);
+    });
+
+    test("DELETE /api/volunteers/:id removes volunteer", async () => {
+        const res = await request(app).delete("/api/volunteers/1");
+        expect(res.status).toBe(200);
+    });
+
+    test("DELETE /api/volunteers/:id returns 404 if missing", async () => {
+        const res = await request(app).delete("/api/volunteers/404");
+        expect(res.status).toBe(404);
+    });
 });

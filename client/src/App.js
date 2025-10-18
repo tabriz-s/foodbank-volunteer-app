@@ -26,6 +26,8 @@ import ManageEvents from './pages/admin/ManageEvents';
 import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
+// Temporary mock user (replace later with real login data)
+const currentUser = { id: 99, role: "admin", name: "Admin User" };
 
 // Separate wrapper for notifications system
 function NotificationWrapper() {
