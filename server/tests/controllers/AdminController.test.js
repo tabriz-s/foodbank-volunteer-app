@@ -1,4 +1,4 @@
-const AdminController = require('../src/controllers/AdminController');
+const AdminController = require('../../src/controllers/AdminController');
 describe('AdminController', () => {
     describe('getDashboardStats', () => {
         test('should return dashboard stats', async () => {

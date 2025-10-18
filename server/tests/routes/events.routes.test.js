@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const eventRoutes = require('../src/routes/events');
+const eventRoutes = require('../../src/routes/events');
 
 const createApp = () => {
     const app = express();

@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const { validateEventCreate, validateEventUpdate } = require('../src/middleware/EventValidation');
+const { validateEventCreate, validateEventUpdate } = require('../../src/middleware/EventValidation');
 
 const createTestApp = (validationMiddleware) => {
     const app = express();
