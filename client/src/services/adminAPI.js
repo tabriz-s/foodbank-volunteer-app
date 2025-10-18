@@ -1,6 +1,5 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
-/* GETS */
 // Fetch admin dashboard statistics
 export const fetchDashboardStats = async () => {
     try {
@@ -38,7 +37,7 @@ export const fetchRecentActivities = async () => {
         if (!response.ok) {
             throw new Error(data.message || 'Failed to fetch recent activities');
         }
-        return data.data; // Extract just the activities array
+        return data.data;
     } catch (error) {
         console.error('Error fetching recent activities:', error);
         throw error;
