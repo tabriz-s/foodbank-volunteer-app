@@ -31,7 +31,7 @@ const ManageEvents = () => {
         const loadData = async () => {
             try {
                 // Fetch skills directly from backend
-                const skillsResponse = await fetch('http://localhost:3001/api/skills');
+                const skillsResponse = await fetch('http://localhost:5000/api/skills');
                 const skillsData = await skillsResponse.json();
                 setAvailableSkills(skillsData.data);
                 
