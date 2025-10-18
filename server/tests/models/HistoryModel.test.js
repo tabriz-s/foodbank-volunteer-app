@@ -74,7 +74,10 @@ describe("VolunteerHistoryModel", () => {
     // 🔹 Update Function
     // -------------------------------------------------------------------------
     test("should update matching event correctly", () => {
-        const updatedCount = updateHistoryByEvent(101, { urgency: "Critical" });
+        const updatedCount = updateHistoryByEvent({
+            id: 101,
+            urgency: "Critical",
+        });
         expect(updatedCount).toBeGreaterThan(0);
 
         const updated = getVolunteerHistory(1).find((e) => e.eventId === 101);
@@ -82,7 +85,10 @@ describe("VolunteerHistoryModel", () => {
     });
 
     test("should skip update if eventId does not match any entries", () => {
-        const updatedCount = updateHistoryByEvent(9999, { urgency: "Low" });
+        const updatedCount = updateHistoryByEvent({
+            id: 9999,
+            urgency: "Low",
+        });
         expect(updatedCount).toBe(0);
     });
 
