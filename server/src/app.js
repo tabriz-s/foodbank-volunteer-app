@@ -27,6 +27,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Test routes (no database required)
 app.use('/api/test', require('./routes/test'));
+app.use('/api/skills', require('./routes/skills'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/events', require('./routes/events'));
 
 // Volunteer routes
 app.use('/api/volunteers', require('./routes/volunteers'));
