@@ -62,6 +62,24 @@ We are designing a web application for a food bank-based nonprofit organization.
 
 ---
 
+## Running Code Coverage Tests
+
+This project uses Jest for unit and integration testing, with coverage reporting enabled.
+
+### Run all tests with coverage
+```bash
+cd server
+npm run test:coverage
+```
+### View the report
+
+After running the command, a summary appears in the terminal.
+A full HTML report is also generated at:
+```bash
+/coverage/lcov-report/index.html
+```
+You can open this file in any browser to explore line-by-line test coverage.
+
 ## Database Schema
 ![alt text](drawSQL-image-export-2025-09-26.png)
 *Also available in https://drawsql.app/teams/javiers-team-13/diagrams/food-bank
