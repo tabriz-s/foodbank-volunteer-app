@@ -1,4 +1,3 @@
-// client/src/services/eventAPI.js
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Fetch all events
