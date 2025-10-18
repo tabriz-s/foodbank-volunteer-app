@@ -13,7 +13,8 @@ const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    userType: 'volunteer'
   });
   const [errors, setErrors] = useState({});
 
@@ -74,20 +75,26 @@ const Register = () => {
     setLoading(true);
     
     try {
-      // Register as volunteer (default role)
       await signup(
         formData.email, 
         formData.password, 
-        'volunteer',
+        formData.userType,
         formData.email.split('@')[0]
       );
       
-      console.log('Registration successful - redirecting to profile');
+      console.log('Registration successful - redirecting based on role');
       
-      // Redirect to profile completion
-      navigate('/volunteer/profile', {
-        state: { message: 'Welcome! Please complete your profile to start volunteering.' }
-      });
+      // Redirect based on user type
+      if (formData.userType === 'volunteer') {
+        navigate('/volunteer/profile', {
+          state: { message: 'Welcome! complete your profile to start volunteering.' }
+        });
+      } else {
+        // Admin goes to admin dashboard
+        navigate('/admin/dashboard', {
+          state: { message: 'Welcome! your admin account is ready.' }
+        });
+      }
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -145,7 +152,7 @@ const Register = () => {
               <span className="text-2xl">🌟</span>
             </div>
             <h2 className="text-3xl font-bold text-gray-900">
-              Join as a Volunteer
+              Create Account
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               Already have an account?{' '}
@@ -181,6 +188,29 @@ const Register = () => {
                   {errors.email}
                 </p>
               )}
+            </div>
+
+            {/* User Type Selection */}
+            <div>
+              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">
+                I want to register as <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="userType"
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="volunteer">Volunteer</option>
+                <option value="admin">Administrator</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.userType === 'volunteer' 
+                  ? 'Join events and help make a difference in your community'
+                  : 'Manage events, volunteers, and coordinate activities'
+                }
+              </p>
             </div>
 
             {/* Password Field */}
@@ -303,7 +333,7 @@ const Register = () => {
                   Creating account...
                 </div>
               ) : (
-                'Create Volunteer Account'
+                'Create Account'
               )}
             </button>
 
@@ -323,9 +353,6 @@ const Register = () => {
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
             By creating an account, you agree to help make a difference in your community
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            Admin accounts are created by system administrators
           </p>
         </div>
       </div>
