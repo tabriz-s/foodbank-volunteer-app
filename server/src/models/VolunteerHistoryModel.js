@@ -63,7 +63,7 @@ const addVolunteerHistory = (volunteerId, eventData) => {
     };
 
     volunteerHistory[id].push(newEntry);
-    return volunteerHistory[id];
+    return newEntry;
 };
 
 /* =======================================

@@ -15,7 +15,7 @@ const { volunteers } = require("../models/VolunteerModel"); // for name lookup
 ========================================= */
 const getVolunteerHistoryById = (req, res) => {
     const volunteerId = parseInt(req.params.id, 10);
-    const user = req.user || { id: 1, role: "volunteer" }; // mock auth fallback
+    const user = req.user;
 
     // Access control
     if (user.role !== "admin" && user.id !== volunteerId) {
