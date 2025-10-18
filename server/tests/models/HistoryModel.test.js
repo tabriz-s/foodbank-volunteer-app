@@ -3,7 +3,7 @@ const {
     addVolunteerHistory,
     updateHistoryByEvent,
     deleteHistoryByEvent,
-} = require("../src/models/VolunteerHistoryModel");
+} = require("../../src/models/VolunteerHistoryModel");
 
 describe("VolunteerHistoryModel", () => {
     beforeEach(() => {

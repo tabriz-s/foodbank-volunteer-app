@@ -33,7 +33,7 @@ let volunteerHistory = {
 };
 
 /* =======================================
-   Get volunteer history by volunteer ID
+   GET volunteer history by volunteer ID
 ========================================= */
 const getVolunteerHistory = (volunteerId) => {
     const id = parseInt(volunteerId);
@@ -41,7 +41,7 @@ const getVolunteerHistory = (volunteerId) => {
 };
 
 /* =======================================
-   Add new record when volunteer is assigned to event
+   POST new record when volunteer is assigned to event
    - Automatically pulls event info
    - Sets status to "Pending"
 ========================================= */
@@ -67,7 +67,7 @@ const addVolunteerHistory = (volunteerId, eventData) => {
 };
 
 /* =======================================
-   Update event info across all volunteer histories
+   PUT event info across all volunteer histories
    - If an event is edited (name, date, etc.)
    - Reflects changes in every volunteer’s history
 ========================================= */
@@ -100,7 +100,7 @@ const updateHistoryByEvent = (eventData) => {
 };
 
 /* =======================================
-   Delete all history entries for a deleted event
+   DELETE all history entries for a deleted event
 ========================================= */
 const deleteHistoryByEvent = (eventId) => {
     let deletedCount = 0;

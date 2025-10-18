@@ -3,10 +3,10 @@ const {
     assignVolunteerToEvent,
     updateEventHistory,
     deleteEventHistory,
-} = require("../src/controllers/HistoryController");
+} = require("../../src/controllers/HistoryController");
 
-const mockModel = require("../src/models/VolunteerHistoryModel");
-jest.mock("../src/models/VolunteerHistoryModel");
+const mockModel = require("../../src/models/VolunteerHistoryModel");
+jest.mock("../../src/models/VolunteerHistoryModel");
 
 describe("HistoryController", () => {
     let req, res;
