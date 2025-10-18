@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { verifyToken } = require('../middleware/authMiddleware');
-const { mockAuth } = require('../middleware/AuthMiddleware');
+const { mockAuth } = require('../middleware/authMiddleware');
 
 /**
  * @route   POST /api/auth/register
@@ -46,14 +46,5 @@ router.get('/me', verifyToken, authController.getCurrentUser);
  * @access  Private
  */
 router.post('/refresh', verifyToken, authController.refreshToken);
-
-//GET /api/auth/me
-// Returns the currently authenticated mock user
-router.get('/me', mockAuth, (req, res) => {
-    res.status(200).json({
-        success: true,
-        user: req.user,
-    });
-});
 
 module.exports = router;
