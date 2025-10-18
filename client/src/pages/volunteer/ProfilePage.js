@@ -1,6 +1,12 @@
 import React, { useState, useEffect} from 'react';
+import { fetchProfile, createProfile, updateProfile, fetchSkills } from '../../services/ProfileAPI';
 
 const ProfilePage = () => {
+
+    // mock user data - using user with ID 1. 
+    // final app should use authentication content
+    const CURRENT_USER_ID = 1; // change to 3+ to test "new user" change in Profile controller to change user
+
     const [profileData, setProfileData] = useState({
         full_name: '',
         phone_number: '',
@@ -16,27 +22,83 @@ const ProfilePage = () => {
 
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
     const [availableSkills, setAvailableSkills] = useState([]);
     const [activeSection, setActiveSection] = useState('personal-info');
+    const [profileExists, setProfileExists] = useState(false); // check if the user is new or already in the database
+    const [isEditMode, setIsEditMode] = useState(false); // check if the user editing or viewing page
+    const [originalProfileData, setOriginalProfileData] = useState(null); // store original profile data for when the user hits the cancel button (revert to this state when clicked)
+
     
     // mock data for testing - replace with real data once database is connected
     useEffect(() => {
-        // This would be an API call: fetch('/api/skills') <- example
-        setAvailableSkills([
-            { Skills_id: 1, Description: 'Cooking', Category: 'Food_Preparation' },
-            { Skills_id: 2, Description: 'Food Safety Certification', Category: 'Food_Preparation' },
-            { Skills_id: 3, Description: 'Heavy Lifting', Category: 'Warehouse' },
-            { Skills_id: 4, Description: 'Inventory Management', Category: 'Warehouse' },
-            { Skills_id: 5, Description: 'CDL License', Category: 'Transportation' },
-            { Skills_id: 6, Description: 'Safe Driving', Category: 'Transportation' },
-            { Skills_id: 7, Description: 'Customer Service', Category: 'Distribution' },
-            { Skills_id: 8, Description: 'Spanish Speaking', Category: 'Communication' },
-            { Skills_id: 9, Description: 'First Aid Certification', Category: 'Safety' }
-        ]);
+        const loadData = async () => {
+            try {
+                setLoading(true);
 
-        
-        // This would be: fetchProfileData();
+                // load in available skills
+                const skills = await fetchSkills();
+                setAvailableSkills(skills);
+
+                // fetch existing profile if it exists - GET
+                try {
+                    const response = await fetchProfile(CURRENT_USER_ID);
+
+                    // if profile exists
+                    if (response.success && response.data) {
+                        const volunteer = response.data; // data received 
+
+                        // parse the data from the backend (databse in the future) to put full name and days on one line 
+                        const fullName = `${volunteer.First_name} ${volunteer.Middle_name ? volunteer.Middle_name + ' ' : ''}${volunteer.Last_name}`.trim(); 
+                        const availabilityDays = volunteer.Available_days ? volunteer.Available_days.split(',') : [];
+                        
+                        // extract skills from backend response
+                        const volunteerSkills = volunteer.skills || [];
+
+                        // convert skills to fit frontend format
+                        const loadedSkills = volunteerSkills.map(skill => ({
+                            Skills_id: skill.Skills_id,
+                            Experience_level: skill.Experience_level,
+                            Date_acquired: skill.Date_acquired
+                        }));
+
+                        // populate form with fetched data
+                        const loadedProfileData = {
+                            full_name: fullName,
+                            phone_number: volunteer.phone_number || '',
+                            address_1: volunteer.address_1 || '',
+                            address_2: volunteer.address_2 || '',
+                            city: volunteer.city || '',
+                            state: volunteer.state || '',
+                            zip_code: volunteer.zip_code || '',
+                            skills: loadedSkills, // skills loaded into the form
+                            preferences: volunteer.Preferences || '',
+                            availability_days: availabilityDays
+                        };
+                        
+                        
+                        setProfileData(loadedProfileData); // set current data
+                        setOriginalProfileData(loadedProfileData) // set original data in the event of canceling an update/edit
+                        setProfileExists(true);
+                        setIsEditMode(false); // starts in view mode
+                    }
+                } catch (profileError) {
+                    console.log("No existing profile found - new user");
+                    setProfileExists(false);
+                    setIsEditMode(true); // user does not exists so they must add in their info
+                }
+            } catch (error) {
+                console.error("Error loading dataset:", error);
+                setErrors({ submit: "Failed to load data. Refresh the page."});
+
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+
     }, []);
     
     // handle text inputs
@@ -47,7 +109,7 @@ const ProfilePage = () => {
             [name]: value
         }));
         
-        // clear the error when the user startys typing
+        // clear the error when the user starts typing
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
@@ -58,13 +120,37 @@ const ProfilePage = () => {
 
     // handle skill checkbox inputs
     const handleSkillToggle = (skillId) => {
+        setProfileData(prev => {
+            const existingSkill = prev.skills.find(s => s.Skills_id === skillId); // checking if skill exists
+
+            // checking and unchecking skills when clicked
+            if (existingSkill) {    // if skills exists, uncheck it
+                return {
+                    ...prev,
+                    skills: prev.skills.filter(s => s.Skills_id !== skillId)
+                };
+            } else {                // if skill does not exist, check it
+                const newSkill = {
+                    Skills_id: skillId,
+                    experience_level: 'beginner', // default if user doesn't select experience level
+                    Date_acquired: new Date().toISOString().split('T')[0] // default to current date if user does not select
+                };
+                return {
+                    ...prev,
+                    skills: [...prev.skills, newSkill]
+                };
+            }
+        });
+
+        /* old code
         setProfileData(prev => ({
             ...prev,
             skills: prev.skills.includes(skillId)
-            ? prev.skills.filter(id => id !== skillId)  // Remove if already selected
-            : [...prev.skills, skillId]                 // Add if not selected
+                ? prev.skills.filter(id => id !== skillId)  // Remove if already selected
+                : [...prev.skills, skillId]                 // Add if not selected
         }));
-    }; 
+        */
+    };
 
     // handle day selection for availability
     const handleDayToggle = (day) => {
@@ -73,6 +159,30 @@ const ProfilePage = () => {
             availability_days: prev.availability_days.includes(day)
                 ? prev.availability_days.filter(d => d !== day)
                 : [...prev.availability_days, day]
+        }));
+    };
+
+    // Handle experience level change for a specific skill
+    const handleSkillExperienceChange = (skillId, newExperience) => {
+        setProfileData(prev => ({
+            ...prev,
+            skills: prev.skills.map(skill => 
+                skill.Skills_id === skillId
+                    ? { ...skill, Experience_level: newExperience } // Update this skill's experience
+                    : skill // Keep other skills unchanged
+            )
+        }));
+    };
+
+    // Handle date change for a specific skill
+    const handleSkillDateChange = (skillId, newDate) => {
+        setProfileData(prev => ({
+            ...prev,
+            skills: prev.skills.map(skill =>
+                skill.Skills_id === skillId
+                    ? { ...skill, Date_acquired: newDate } // Update this skill's date
+                    : skill // Keep other skills unchanged
+            )
         }));
     };
 
@@ -88,9 +198,35 @@ const ProfilePage = () => {
         newErrors.full_name = 'Full name must be 50 characters or less';
         }
 
-        // Skills validation - one skill is required
+        ///
+        // Skills validation - at least 1 skill is needed
         if (profileData.skills.length === 0) {
-        newErrors.skills = 'Please select at least one skill';
+            newErrors.skills = 'Please select at least one skill';
+        } else {
+            // Validate each skill has required fields
+            for (let i = 0; i < profileData.skills.length; i++) {
+                const skill = profileData.skills[i];
+                
+                // Check if Experience_level exists and is valid
+                const validLevels = ['beginner', 'intermediate', 'expert'];
+                if (!skill.Experience_level || !validLevels.includes(skill.Experience_level.toLowerCase())) {
+                    newErrors.skills = `Skill ${i + 1}: Please select an experience level`;
+                    break;
+                }
+                
+                // Check if Date_acquired exists and is valid
+                if (!skill.Date_acquired) {
+                    newErrors.skills = `Skill ${i + 1}: Please select a date acquired`;
+                    break;
+                }
+                
+                // Validate date format (YYYY-MM-DD)
+                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dateRegex.test(skill.Date_acquired)) {
+                    newErrors.skills = `Skill ${i + 1}: Invalid date format`;
+                    break;
+                }
+            }
         }
 
         // Check address fields
@@ -119,6 +255,12 @@ const ProfilePage = () => {
         } else if (!/^\d{5}(-\d{4})?$/.test(profileData.zip_code.trim())) {
             newErrors.zip_code = 'Please enter a valid zip code (12345 or 12345-6789)';
         }
+
+        if (!profileData.phone_number.trim()) {
+            newErrors.phone_number = 'Phone number is required';
+        } else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(profileData.phone_number)) {
+            newErrors.phone_number = 'Please enter a valid phone number';
+        }
         
         // removes specific dates from avalability list
         if (profileData.availability_days.length === 0) {
@@ -129,6 +271,24 @@ const ProfilePage = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+    // Handle Edit button click
+    const handleEditClick = () => {
+        setIsEditMode(true);
+        setSuccess(false);
+        setErrors({});
+    }
+
+    // Handle Cancel edit button
+    const handleCancelEdit = () => {
+        setIsEditMode(false);
+        setErrors({});
+        // reload previous data before an edit was made
+        if (originalProfileData) {
+            setProfileData({...originalProfileData});
+        }
+    }
+    
+    // submit form to the backend
     const handleSubmit = async (event) => {
         event.preventDefault();
 
@@ -137,26 +297,56 @@ const ProfilePage = () => {
             return;
         };
 
-        setLoading(true);
+        setSaving(true);
         setSuccess(false); // clear any previous success messege
+        setErrors({});
 
         try {
-            /*
-            there should be an POST API call here
-            change when front end is complete and test with real data
-            */
+            let response;
 
-            // sumulate API Call for testing
-            await new Promise(resolve => setTimeout(resolve, 1000)); // sending data simulation - small wait time
-            
-            setSuccess(true);
-            console.log('Profile saved:', profileData);
+            if (profileExists) {
+                // update the data (PUT)
+                response = await updateProfile(CURRENT_USER_ID, profileData);
+
+                if (response.success) {
+
+                    setOriginalProfileData({...profileData});
+                    setIsEditMode(false); // done editing/updating - back to view mode
+                    setSuccess(true);
+                    console.log("Profile updated:", response.data);
+
+                    setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
+                } else {
+                    // handle the backend returning false
+                    setErrors({ submit: response.message || 'Failed to update profile.' })
+                }
+                
+            } else {
+                // create a new profile - new user
+                response = await createProfile({
+                    ...profileData,
+                    user_id: CURRENT_USER_ID // should be a new user.
+                });
+
+                if (response.success) {
+                    setOriginalProfileData({...profileData}); // store new profile 
+                    setProfileExists(true); // profile created so make true
+                    setIsEditMode(false); // done editing/updating - back to view mode
+                    setSuccess(true);
+                    console.log('Profile created:', response.data);
+
+                    setTimeout(() => setSuccess(false), 3000); // clear message after a certain ammount of time
+                } else {
+                    // Handle backend returning success: false
+                    setErrors({ submit: response.message || 'Failed to create profile.' });
+                }
+            }
 
         } catch (error) {
             console.error('Error saving profile:', error);
-            setErrors({ submit: 'Failed to save profile. Please try again.' });
+            setErrors({ submit: error.message || 'Failed to save profile. Please try again.' });
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
@@ -188,7 +378,7 @@ const ProfilePage = () => {
         }
     ]; 
 
-    // render volunteers personal info when thsi section of the navbar is selected
+    // render volunteers personal info when this section of the navbar is selected
     const renderPersonalInfo = () => {
         const states = [
             { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -210,6 +400,8 @@ const ProfilePage = () => {
             { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
         ];
 
+        const isReadOnly = profileExists && !isEditMode; // Check if user is viewing or editing
+
         return (
             <div className="space-y-6">
 
@@ -226,14 +418,17 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="50"
                         placeholder="Enter First and Last Name"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.full_name ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.full_name && (
                         <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                    )}
                 </div>
 
                 {/* ----Phone Number Section---- */}
@@ -248,9 +443,10 @@ const ProfilePage = () => {
                         value={profileData.phone_number}
                         onChange={handleInputChange}
                         placeholder="(123) 456-7890"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.phone_number ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.phone_number ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.phone_number && (
                         <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
@@ -272,14 +468,17 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="Street address"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.address_1 ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.address_1 ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.address_1 && (
                         <p className="mt-1 text-sm text-red-600">{errors.address_1}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                    )}
                 </div>
 
                 {/* Address Line 2 */}
@@ -295,14 +494,17 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="Apartment, suite, etc. (optional)"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.address_2 ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.address_2 ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.address_2 && (
                         <p className="mt-1 text-sm text-red-600">{errors.address_2}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                    )}
                 </div>
                 
                 {/* City */}
@@ -318,14 +520,17 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         maxLength="100"
                         placeholder="City"
+                        disabled={isReadOnly}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.city ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
                     />
                     {errors.city && (
                         <p className="mt-1 text-sm text-red-600">{errors.city}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                    {!isReadOnly && (
+                        <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                    )}
                 </div>
 
                 {/* State and Zip Code Row */}
@@ -340,19 +545,21 @@ const ProfilePage = () => {
                             name="state"
                             value={profileData.state}
                             onChange={handleInputChange}
+                            disabled={isReadOnly}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.state ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            } ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
                         >
                             <option value="">Select State</option>
                             {states.map(state => (
-                            <option key={state.code} value={state.code}>{state.name}</option>
+                                <option key={state.code} value={state.code}>{state.name}</option>
                             ))}
                         </select>
                         {errors.state && (
                             <p className="mt-1 text-sm text-red-600">{errors.state}</p>
                         )}
                     </div>
+
                     {/* Zip Code */}
                     <div>
                         <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 mb-2">
@@ -366,9 +573,10 @@ const ProfilePage = () => {
                             onChange={handleInputChange}
                             maxLength="9"
                             placeholder="12345 or 12345-6789"
+                            disabled={isReadOnly}
                             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            errors.zip_code ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                            } ${errors.zip_code ? 'border-red-500' : 'border-gray-300'}`}
                         />
                         {errors.zip_code && (
                             <p className="mt-1 text-sm text-red-600">{errors.zip_code}</p>
@@ -388,7 +596,10 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         rows="3"
                         placeholder="Any preferences for volunteering (e.g., preferred time slots, special accommodations needed, etc.)"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        disabled={isReadOnly}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
+                        } border-gray-300`}
                     />
                 </div>
             </div>
@@ -396,42 +607,109 @@ const ProfilePage = () => {
     };
 
     // display the users skillset
-    const renderSkills = () => (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Select Your Skills</h3>
-                <div className="border rounded-md p-4 max-h-96 overflow-y-auto bg-gray-50">
-                    {Object.entries(skillsByCategory).map(([category, skills]) => (
-                        <div key={category} className="mb-6">
-                            <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
-                                {category.replace('_', ' ')}
-                            </h4>
-                            <div className="space-y-3">
-                                {skills.map((skill) => (
-                                    <label key={skill.Skills_id} className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={profileData.skills.includes(skill.Skills_id)}
-                                            onChange={() => handleSkillToggle(skill.Skills_id)}
-                                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        />
-                                        <span className="ml-3 text-sm text-gray-700">{skill.Description}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {errors.skills && (
-                    <p className="mt-2 text-sm text-red-600">{errors.skills}</p>
-                )}
-                 <p className="mt-2 text-sm text-gray-600">
-                    {profileData.skills.length} skill{profileData.skills.length !== 1 ? 's' : ''} selected
-                </p>
-            </div>
-        </div>
-    );
+    const renderSkills = () => {
+        const isReadOnly = profileExists && !isEditMode; // check if user is viewing or editing
+        const isSkillSelected = (skillId) => {
+            return profileData.skills.some(s => s.Skills_id === skillId);   // check if skill(s) is selected
+        };
+        const getSkillDetails = (skillId) => {
+            return profileData.skills.find(s => s.Skills_id === skillId);   // get skill details if selected
+        };
 
+        return (
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        {isReadOnly ? 'Your Skills' : 'Select Your Skills'}
+                    </h3>
+                    <div className="border rounded-md p-4 max-h-96 overflow-y-auto bg-gray-50">
+                        {Object.entries(skillsByCategory).map(([category, skills]) => (
+                            <div key={category} className="mb-6">
+                                <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
+                                    {category.replace('_', ' ')}
+                                </h4>
+                                <div className="space-y-4">
+                                    {skills.map((skill) => {
+                                        const selected = isSkillSelected(skill.Skills_id);  // check if skill selected
+                                        const skillDetails = getSkillDetails(skill.Skills_id); // Get details of skills if selected
+
+                                        return (
+                                            <div key={skill.Skills_id} className="space-y-2">
+                                                {/* Checkbox Section of skills*/}
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selected}
+                                                        onChange={() => handleSkillToggle(skill.Skills_id)}
+                                                        disabled={isReadOnly}
+                                                        className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                                            isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+                                                        }`}
+                                                    />
+                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                        {skill.Description}
+                                                    </span>
+                                                </label>
+                                                
+                                                {/* Show experience and date inputs when skill is selected */}
+                                                {selected && (
+                                                    <div className="ml-7 space-y-2 p-3 bg-white rounded border border-gray-200">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            {/* Experience Level Dropdown */}
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                    Experience Level <span className="text-red-500">*</span>
+                                                                </label>
+                                                                <select
+                                                                    value={skillDetails?.Experience_level || 'beginner'}
+                                                                    onChange={(e) => handleSkillExperienceChange(skill.Skills_id, e.target.value)}
+                                                                    disabled={isReadOnly}
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    }`}
+                                                                >
+                                                                    <option value="beginner">Beginner</option>
+                                                                    <option value="intermediate">Intermediate</option>
+                                                                    <option value="expert">Expert</option>
+                                                                </select>
+                                                            </div>
+                                                            
+                                                            {/* Date Acquired Picker */}
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                    Date Acquired <span className="text-red-500">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="date"
+                                                                    value={skillDetails?.Date_acquired || ''}
+                                                                    onChange={(e) => handleSkillDateChange(skill.Skills_id, e.target.value)}
+                                                                    disabled={isReadOnly}
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    }`}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {errors.skills && (
+                        <p className="mt-2 text-sm text-red-600">{errors.skills}</p>
+                    )}
+                    <p className="mt-2 text-sm text-gray-600">
+                        {profileData.skills.length} skill{profileData.skills.length !== 1 ? 's' : ''} selected
+                    </p>
+                </div>
+            </div>
+        );
+    };
+   
     // this is to show the email the volunteer used to log in
     // This is just for now - update later to show only the email and an option to change their password
     const renderEmailPassword = () => (
@@ -466,13 +744,16 @@ const ProfilePage = () => {
             { id: 'saturday', label: 'Saturday' },
             { id: 'sunday', label: 'Sunday' }
         ];
+
+        const isReadOnly = profileExists && !isEditMode;
         
         return (
             <div className="space-y-6">
                 <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Your Weekly Availability</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                        Select the days of the week when you're generally available to volunteer.
+                        {isReadOnly ? 'Days of week you are generally available to volunteer.' : 
+                            'Select the days of the week when you are generally available to volunteer'}
                     </p>
 
                     <div className="space-y-3">
@@ -482,7 +763,10 @@ const ProfilePage = () => {
                                     type="checkbox"
                                     checked={profileData.availability_days.includes(day.id)}
                                     onChange={() => handleDayToggle(day.id)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    disabled={isReadOnly}
+                                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                        isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+                                    }`}
                                 />
                                 <span className="ml-3 text-sm text-gray-700 font-medium">{day.label}</span>
                             </label>
@@ -492,7 +776,7 @@ const ProfilePage = () => {
                     {profileData.availability_days.length > 0 && (
                         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                             <p className="text-sm font-medium text-blue-800 mb-2">Selected Days</p>
-                            <div>
+                            <div className="flex flex-wrap gap-2">
                                 {profileData.availability_days.map((dayId) =>{
                                     const day = daysOfWeek.find(d => d.id === dayId);
                                     return (
@@ -533,6 +817,7 @@ const ProfilePage = () => {
         }
     };
 
+    /* ----- Render Page ----- */
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -545,7 +830,12 @@ const ProfilePage = () => {
                                 <nav className="space-y-1">
                                     <div className="px-6 mb-6">
                                         <h1 className="text-2xl font-bold text-gray-900">Profile Management</h1>
-                                        <p className="mt-1 text-sm text-gray-600">Manage your volunteer information</p>
+                                        <p className="mt-1 text-sm text-gray-600">
+                                            {profileExists
+                                                ? (isEditMode ? "Edit your information" : "View your volunteer information")
+                                                : 'Complete your volunteer profile'
+                                            }
+                                        </p>
                                     </div>
                                     {/* get buttons for each item in sidebarItems array */}
                                     {sidebarItems.map((item) => (
@@ -577,7 +867,9 @@ const ProfilePage = () => {
                                                     </svg>
                                                 </div>
                                                 <div className="ml-3">
-                                                    <p className="text-sm font-medium text-green-800">Profile saved successfully!</p>
+                                                    <p className="text-sm font-medium text-green-800">
+                                                        {profileExists ? 'Profile updated successfully!' : 'Profile created successfully!'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -588,23 +880,50 @@ const ProfilePage = () => {
 
                                     {renderContent()}
                                 </div>
-
+                                
+                                {/* Action Buttons */}
                                 <div className="pt-6 px-4 sm:px-6">
                                     {errors.submit && (
                                         <p className="mb-3 text-sm text-red-600">{errors.submit}</p>
                                     )}
                                     <div className="flex justify-end mb-3">
-                                        <button
-                                            type="submit"
-                                            disabled={loading}
-                                            className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                                                loading 
-                                                ? 'bg-gray-400 cursor-not-allowed' 
-                                                : 'bg-blue-600 hover:bg-blue-700'
-                                            }`}
-                                        >
-                                            {loading ? 'Saving...' : 'Save Changes'}
-                                        </button>
+                                        {profileExists && !isEditMode ? (
+                                            // View mode - show an Edit button
+                                            <button
+                                                type="button"
+                                                onClick={handleEditClick}
+                                                className="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600
+                                                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            >
+                                                Edit Profile
+                                            </button>
+                                        ) : (
+                                            // Edit/Create mode - Shows a cancel and save button
+                                            <>
+                                                {profileExists && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCancelEdit}
+                                                        className="py-2 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700
+                                                            bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="submit"
+                                                    disabled={saving}
+                                                    className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
+                                                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                                                        saving 
+                                                        ? 'bg-gray-400 cursor-not-allowed' 
+                                                        : 'bg-blue-600 hover:bg-blue-700'
+                                                    }`}
+                                                >
+                                                    {saving ? 'Saving data...' : (profileExists ? 'Save Changes' : 'Create Profile')}
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </form>
@@ -622,7 +941,7 @@ const ProfilePage = () => {
                         <a
                             href="/volunteer/history"
                             className="inline-block bg-blue-600 shadow-sm text-sm font-medium text-white px-5 py-2
-        rounded-md hover:bg-blue-700 transition-colors"
+                                rounded-md hover:bg-blue-700 transition-colors"
                         >
                             View History
                         </a>

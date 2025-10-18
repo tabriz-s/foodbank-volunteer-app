@@ -29,6 +29,25 @@ app.use(express.urlencoded({ extended: true }));
 //app.use('/api/test', require('./routes/test'));
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/test', require('./routes/test'));
+app.use('/api/skills', require('./routes/skills'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/events', require('./routes/events'));
+
+// Authentication routes
+app.use('/api/auth', require('./routes/auth'));
+
+// Volunteer routes
+app.use('/api/volunteers', require('./routes/volunteers'));
+
+// Skill routes
+app.use('/api/skills', require('./routes/skills'));
+
+// Volunteer history routes
+app.use('/api', require('./routes/history'));
+
+// Volunteer matching routes
+app.use('/api', require('./routes/matching'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

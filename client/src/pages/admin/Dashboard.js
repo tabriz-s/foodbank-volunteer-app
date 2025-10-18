@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { NotificationContext } from '../../contexts/NotificationContext';
+import { fetchDashboardStats, fetchRecentActivities } from '../../services/adminAPI';
 
 const AdminDashboard = () => {
     // dashboard stats and data
@@ -17,23 +18,24 @@ const AdminDashboard = () => {
     // Get notifications for activity feed
     const { addNotification, notifications } = useContext(NotificationContext);
 
-    // mock data when component starts
-    useEffect(() => {
-        setDashboardStats({
-            totalEvents: 8,
-            totalVolunteers: 32,
-            activeEvents: 3,
-            pendingMatches: 5
-        });
+// Fetch real data from backend
+useEffect(() => {
+    const loadDashboard = async () => {
+        try {
+            const stats = await fetchDashboardStats();
+            setDashboardStats(stats.data);
+            
+            const activities = await fetchRecentActivities();
+            setRecentActivities(activities);
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    };
+    
+    loadDashboard();
+}, []);
 
-        // fake recent activities to make dashboard look active
-        setRecentActivities([
-            { id: 1, action: 'New volunteer registered', name: 'Tadiwa K', time: '1 hour ago' },
-            { id: 2, action: 'Event created', name: 'UH Food Bank Distribution', time: '3 hours ago' },
-            { id: 3, action: 'Volunteer matched to event', name: 'Javier A → Houston Food Bank Cleanup', time: '5 hours ago' },
-            { id: 4, action: 'Event updated', name: 'UH Community Outreach', time: '1 day ago' }
-        ]);
-    }, []);
+    
 
     // menu options for the admin
 const sidebarItems = [
