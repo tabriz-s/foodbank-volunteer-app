@@ -3,10 +3,14 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import axios from 'axios';
 import './App.css';
 
-// Import components over here
+// Import AuthProvider
+import { AuthProvider } from './contexts/AuthContext';
+
+// Import components
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import DevNavigation from './components/common/DevNavigation';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Home from './pages/Home';
 import About from "./pages/About";
 import Login from './pages/auth/Login';
@@ -16,8 +20,7 @@ import NotificationSystem from './components/common/NotificationSystem';
 import ProfilePage from './pages/volunteer/ProfilePage';
 import VolunteerHistory from './pages/volunteer/VolunteerHistory';
 
-// TODO: Import other pages as they're being created
-// import VolunteerDashboard from './pages/volunteer/Dashboard';
+// Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageEvents from './pages/admin/ManageEvents';
 import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
@@ -26,21 +29,19 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Separate wrapper for notifications system
 function NotificationWrapper() {
-    const location = useLocation();
-    const hiddenRoutes = ['/login', '/register'];
+  const location = useLocation();
+  const hiddenRoutes = ['/login', '/register'];
 
-    // Only render notifications if not on hidden routes
-    if (hiddenRoutes.includes(location.pathname)) {
-        return null;
-    }
-    return <NotificationSystem />;
+  if (hiddenRoutes.includes(location.pathname)) {
+    return null;
+  }
+  return <NotificationSystem />;
 }
 
 function App() {
   const [apiStatus, setApiStatus] = useState('Checking...');
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  // Test backend connection on app load
   useEffect(() => {
     const testConnection = async () => {
       try {
@@ -57,57 +58,88 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
-  <NotificationProvider>
-    <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
-        
-        {/* Development Status Bar - REMOVE THIS ON FINAL SUBMISSION */}
-        <div className="bg-blue-100 border-b border-blue-200 px-4 py-2">
-          <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
-            <span className="text-blue-800">
-              In Development Mode - Volunteer Management System
-            </span>
-            <span className="text-blue-600">
-              Backend: {apiStatus}
-            </span>
+    <AuthProvider>
+      <NotificationProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Navbar />
+
+            {/* Development Status Bar */}
+            <div className="bg-blue-100 border-b border-blue-200 px-4 py-2">
+              <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
+                <span className="text-blue-800">
+                  🚧 Development Mode - Volunteer Management System
+                </span>
+                <span className="text-blue-600">
+                  Backend: {apiStatus}
+                </span>
+              </div>
+            </div>
+
+            <main className="flex-1">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* Volunteer Routes - Protected */}
+                <Route 
+                  path="/volunteer/profile" 
+                  element={
+                    <ProtectedRoute allowedRoles={['volunteer']}>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/volunteer/history" 
+                  element={
+                    <ProtectedRoute allowedRoles={['volunteer']}>
+                      <VolunteerHistory />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Admin Routes - Protected */}
+                <Route 
+                  path="/admin/dashboard" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/events" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <ManageEvents />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/matching" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <VolunteerMatchingForm />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Catch all route - redirect to home */}
+                <Route path="*" element={<Home />} />
+              </Routes>
+            </main>
+
+            <Footer />
+            <NotificationWrapper />
+            <DevNavigation />
           </div>
-        </div>
-
-        <main className="flex-1">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-
-
-            <Route path="/admin/matching" element={<VolunteerMatchingForm />} />
-            {/* Volunteer Routes */}
-            <Route path="/volunteer/profile" element={<ProfilePage />} />
-            <Route path="/volunteer/history" element={<VolunteerHistory />} />
-            
-            {/* TODO: Add protected routes as features are being developed */}
-            {/* 
-            <Route path="/volunteer/dashboard" element={<VolunteerDashboard />} />
-            */}
-            {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-	        <Route path="/admin/events" element={<ManageEvents />} />
-            
-            {/* Catch all route - redirect to home */}
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </main>
-
-        <Footer />
-        <NotificationWrapper />
-        {/* Development Navigation - just shows all the pages in development */}
-        <DevNavigation />
-      </div>
-    </Router>
-  </NotificationProvider>
+        </Router>
+      </NotificationProvider>
+    </AuthProvider>
   );
 }
 
