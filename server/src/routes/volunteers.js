@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { validateProfile } = require('../middleware/Validation');
+const { validateProfile } = require('../middleware/VolunteerMiddleware');
 const {
   getProfile,
   createProfile,
