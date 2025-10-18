@@ -1,6 +1,32 @@
 const express = require('express');
 const router = express.Router();
+const { validateProfile } = require('../middleware/Validation');
+const {
+  getProfile,
+  createProfile,
+  updateProfile,
+  getAllVolunteers,
+  deleteVolunteer
+} = require('../controllers/ProfileController');
 
+// GET /api/volunteers - Get all volunteers (admin only)
+router.get('/', getAllVolunteers);
+
+// GET /api/volunteers/profile
+router.get('/profile', getProfile);
+
+// POST /api/volunteers/profile
+router.post('/profile', validateProfile, createProfile);
+
+// PUT /api/volunteers/profile
+router.put('/profile', validateProfile, updateProfile);
+
+// DELETE /api/volunteers/:id
+router.delete('/:id', deleteVolunteer);
+
+module.exports = router;
+
+/*
 // GET /api/volunteers - Get all volunteers (admin only)
 router.get('/', async (req, res) => {
   try {
@@ -27,5 +53,4 @@ router.put('/profile', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-module.exports = router;
+*/
