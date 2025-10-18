@@ -23,17 +23,20 @@ import ManageEvents from './pages/admin/ManageEvents';
 import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
+// Temporary mock user (replace later with real login data)
+const currentUser = { id: 99, role: "admin", name: "Admin User" };
 
 // Separate wrapper for notifications system
-function NotificationWrapper() {
+function NotificationWrapper({ user }) {
     const location = useLocation();
-    const hiddenRoutes = ['/login', '/register'];
+    const hiddenRoutes = ["/login", "/register"];
 
     // Only render notifications if not on hidden routes
     if (hiddenRoutes.includes(location.pathname)) {
         return null;
     }
-    return <NotificationSystem />;
+
+    return <NotificationSystem user={user} />;
 }
 
 function App() {
@@ -57,7 +60,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
-  <NotificationProvider>
+  <NotificationProvider user={currentUser}>
     <Router>
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -102,7 +105,7 @@ function App() {
         </main>
 
         <Footer />
-        <NotificationWrapper />
+        <NotificationWrapper user={currentUser} />
         {/* Development Navigation - just shows all the pages in development */}
         <DevNavigation />
       </div>

@@ -6,7 +6,7 @@ function mockAuth(req, res, next) {
 
     // Testing as volunteer or admin
     if (!authHeader) {
-        req.user = { id: 99, role: "admin" };
+        req.user = { id: 1, role: "volunteer" };
         return next();
     }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { NotificationContext } from "../../contexts/NotificationContext";
 import { Check } from "lucide-react";
+import { createNotification } from "../../services/NotificationAPI";
 import {
     createVolunteerMatch,
     fetchAllMatches,
@@ -141,6 +142,19 @@ const VolunteerMatchingForm = () => {
                 time: "Just now",
             });
 
+            // Send notifications to backend
+            await createNotification({
+                recipientType: "admin",
+                recipientId: 99, // mock admin ID (use actual logged-in user ID later)
+                message: `${volunteer.name} has been assigned to ${event.name}.`,
+            });
+
+            await createNotification({
+                recipientType: "volunteer",
+                recipientId: volunteer.id,
+                message: `You have been assigned to ${event.name}.`,
+            });
+
             console.log("Match created:", result);
 
             // Reset form
@@ -163,11 +177,26 @@ const VolunteerMatchingForm = () => {
                     (m) => !(m.volunteerId === match.volunteerId && m.eventId === match.eventId)
                 )
             );
+            // Local notification
             addNotification({
                 type: "removal",
                 message: `${match.volunteer} has been unassigned from ${match.event}.`,
                 time: "Just now",
             });
+
+            // Send notifications to backend
+            await createNotification({
+                recipientType: "admin",
+                recipientId: 99, // mock admin ID (use actual logged-in user ID later)
+                message: `${match.volunteer} has been unassigned from ${match.event}.`,
+            });
+
+            await createNotification({
+                recipientType: "volunteer",
+                recipientId: match.volunteerId,
+                message: `You have been unassigned from ${match.event}.`,
+            });
+
         } catch (error) {
             console.error("Error deleting match:", error);
             alert(error.message);
