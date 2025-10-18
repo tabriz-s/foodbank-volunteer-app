@@ -1,20 +1,48 @@
 # COSC 4353 Project - Volunteer App - Group 10
+
+## Team:
 - **Javier Alvarez**
 - **Tadiwa Kabayadondo**
 - **Tabriz Sadredinov**
 - **Mohamed Uddin**
 
-We are designing a web application for a food bank-based nonprofit organization. The core users of the app will be volunteers and administrators. Since we are catering to a wide variety of users, the app will be simple but intuitive, with cross-platform functionality.
+We are designing a web application for a food bank-based nonprofit organization. The core users of the app will be volunteers and administrators. Since we are catering to a wide variety of users, the app will be simple but intuitive, with cross-platform functionality. The user will interact with the web app, where every volunteer will have a profile with their details for them to register, login and sign up for various events and Admins can create and manage events, specifying required skills, location, and urgency. 
 
-## Development Methodology:
 
 ## High-Level Design / Architecture:
 
+- Data Layer (MySQL + Azure) 
+    - Database which stores user information such as login info, profiles, events, notifications, etc. 
+- Data Access Layer (Query / CRUD) 
+    - Involves querying the database for specific data to be used on Service / Business layers.
+- Service Layer (Express.js / Node.js)
+    - Involves use of Express.js in order to provide services
+    - Services include:
+        - Notification services
+        - Authentication services (Firebase) 
+        - Matching services 
+        - Google Maps API services 
+- Business Layer (Event + Volunteer Logic)
+    - Involves event and volunteer management.
+    - Event Management:
+        - Admins create events which are stored in the Events table 
+    - Volunteer Management:
+        - Volunteer info stored in the Volunteers table 
+- Presentation Layer (Frontend: React + TailwindCSS)
+    - Main features include: 
+        - Login/Signup
+        - Profile management 
+        - Event browsing / signup / history / posting (for admins) 
+        - Notifications 
+    - Web application hosted on Vercel
+
 ## Features/Commponent Interaction:
-- **Volunteer Management**:
-- **Event Management**: 
-- **Matching**: 
-- **Notifications**: 
+- **Login**: Volunteers, employees, or admins can register and back-end authenticates, then db stores the account 
+- **Profile** Management: volunteers can update personal info, location, skills, and availability, which is saved in the db. 
+- **Events**: Employees create events with the location, type, description, and urgency, and it’s stored in the EVENTS table.  
+- **Matching**: The matching module queries the db for best volunteers based on an event's requirements. 
+- **Notifications**: There will be back-end calls for notifications/emails to the API which will send event reminders.  
+- **History**: During or after event creation/completion, it’s going to be recorded in the status attribute of the EVENTS table.
 
 ## Tech Stack
 
@@ -34,14 +62,23 @@ We are designing a web application for a food bank-based nonprofit organization.
 
 ---
 
+## Database Schema
+![alt text](drawSQL-image-export-2025-09-26.png)
+*Also available in https://drawsql.app/teams/javiers-team-13/diagrams/food-bank
+---
 ## For the group:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/tabriz-s/foodbank-volunteer-app.git
 npm run install:all
 ```
 
 - Create .env files in both client/ and server/ (see .env.example for reference)
+```bash
+# Copy environment templates
+cp .env.example client/.env
+cp .env.example server/.env
+```
 
 ```bash
 npm run dev
@@ -51,6 +88,7 @@ npm run dev
 
 ```bash
 # 1. pull the latest code
+git checkout main
 git pull origin main
 
 # 2. Create a new branch for your feature. Ex:

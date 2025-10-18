@@ -1,8 +1,20 @@
 module.exports = {
-    testEnvironment: "node",
-    coveragePathIgnorePatterns: [
-        "/node_modules/",
-        "/src/app.js"
+    testEnvironment: 'node',
+    coverageDirectory: 'coverage',
+    collectCoverageFrom: [
+    'src/**/*.js',
+    '!src/app.js',           // Exclude app.js (just Express setup)
+    '!src/server.js',        // Exclude server.js (just starts server)
     ],
-    verbose: true,
+    testMatch: [
+    '**/tests/**/*.test.js'
+    ],
+    coverageThreshold: {
+        global: {
+            branches: 80,
+            functions: 80,
+            lines: 80,
+            statements: 80
+        }
+    }
 };
