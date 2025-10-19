@@ -62,6 +62,41 @@ We are designing a web application for a food bank-based nonprofit organization.
 
 ---
 
+## Database Setup
+
+### Azure MySQL Database
+
+This project uses **Azure MySQL Database** for persistent data storage
+
+#### Connection Setup
+1. **Get Database Credentials:**
+- Get server/.env It has the credentials needed
+- Place it in the `server/` directory
+- **DO NOT commit this file to git**
+
+2. **Install Dependencies:**
+```bash
+   cd server
+   npm install
+```
+3. **Test Database Connection:**
+```bash
+    cd server
+   node test-db-connection.js
+```
+Expected output:
+```
+   Connected to Azure MySQL Database
+   Database connection test successful
+```
+
+#### Database Endpoints
+routes with /db are the production endpoints. The others are mock routes for TA grading
+example:
+- `GET /api/skills/db` - Returns skills from database
+
+---
+
 ## Running Code Coverage Tests
 
 This project uses Jest for unit and integration testing, with coverage reporting enabled.
