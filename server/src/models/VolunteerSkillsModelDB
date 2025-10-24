@@ -1,0 +1,37 @@
+const { getConnection } = require('../config/database');
+
+// (GETS)
+// get all skills for a specififc volunteer
+const getVolunteerSkills = async (volunteerId) => {
+    try {
+        const connection = await getConnection();
+        const [rows] = await connection.query(
+            `SELECT * FROM volunteer_skills WHERE Volunteer_id = ?`, 
+            [volunteerId]
+        );
+        return rows[0];
+
+    } catch (error) {
+        console.error('Error getting skills belonging to Volunteer:', error);
+        throw error;
+    }
+}
+
+// Get volunteer skills WITH full skill details
+const getVolunteerSkillsWithDetails = async (volunteerId) => {
+    try {
+        const connection = await getConnection();
+        const [rows] = await connection.query(
+            `SELECT`
+        )
+    } catch (error) {
+        console.error('Error getting skills and details of specififc Volunteer:', error);
+        throw error;
+    }
+}
+
+// (POSTS)
+
+// (PUTS)
+
+// (DELETES)
