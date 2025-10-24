@@ -21,6 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "concurrently": "^9.2.1",
+    "firebase": "^12.4.0",
     "lucide-react": "^0.544.0"
   }
 }
