@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { validateProfile } = require('../middleware/VolunteerMiddleware');
+const { validateProfile, validateProfileUpdate } = require('../middleware/VolunteerMiddleware');
 
 // mock data controllers
 const {
@@ -62,6 +62,6 @@ router.get('/db/:id/skills', getVolunteerSkillsDB);
 router.post('/db/profile', validateProfile, createProfileDB);
 
 // PUT /api/volunteers/db/profile - Update profile in database
-router.put('/db/profile', updateProfileDB);
+router.put('/db/profile', validateProfileUpdate, updateProfileDB);
 
 module.exports = router;

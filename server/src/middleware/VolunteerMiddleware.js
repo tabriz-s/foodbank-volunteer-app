@@ -110,6 +110,109 @@ const validateProfile = [
     }
 ];
 
+// Validate profile updates (partial data allowed)
+const validateProfileUpdate = (req, res, next) => {
+    const errors = [];
+    
+    // Only validate fields that are actually being sent
+    
+    // If full_name is provided, validate it
+    if (req.body.full_name !== undefined) {
+        if (!req.body.full_name || req.body.full_name.trim().length === 0) {
+            errors.push('Full name cannot be empty');
+        }
+        if (req.body.full_name && req.body.full_name.length > 100) {
+            errors.push('Full name must not exceed 100 characters');
+        }
+    }
+    
+    // If phone_number is provided, validate format
+    if (req.body.phone_number !== undefined) {
+        if (!req.body.phone_number || req.body.phone_number.trim().length === 0) {
+            errors.push('Phone number cannot be empty');
+        }
+        if (req.body.phone_number && !/^\(\d{3}\) \d{3}-\d{4}$/.test(req.body.phone_number)) {
+            errors.push('Phone number must be in format (XXX) XXX-XXXX');
+        }
+    }
+    
+    // If city is provided, validate it
+    if (req.body.city !== undefined) {
+        if (!req.body.city || req.body.city.trim().length === 0) {
+            errors.push('City cannot be empty');
+        }
+        if (req.body.city && req.body.city.length > 100) {
+            errors.push('City must not exceed 100 characters');
+        }
+    }
+    
+    // If state is provided, validate format
+    if (req.body.state !== undefined) {
+        if (!req.body.state || req.body.state.trim().length === 0) {
+            errors.push('State cannot be empty');
+        }
+        if (req.body.state && !/^[A-Z]{2}$/i.test(req.body.state)) {
+            errors.push('State must be a 2-letter code (e.g., TX, CA)');
+        }
+    }
+    
+    // If zip_code is provided, validate format
+    if (req.body.zip_code !== undefined) {
+        if (!req.body.zip_code || req.body.zip_code.toString().trim().length === 0) {
+            errors.push('Zip code cannot be empty');
+        }
+        if (req.body.zip_code && !/^\d{5}(-\d{4})?$/.test(req.body.zip_code)) {
+            errors.push('Zip code must be in format 12345 or 12345-6789');
+        }
+    }
+    
+    // If availability_days is provided, validate it
+    if (req.body.availability_days !== undefined) {
+        if (!Array.isArray(req.body.availability_days) || req.body.availability_days.length === 0) {
+            errors.push('Availability days must be a non-empty array');
+        }
+        const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        if (Array.isArray(req.body.availability_days)) {
+            const invalidDays = req.body.availability_days.filter(day => !validDays.includes(day.toLowerCase()));
+            if (invalidDays.length > 0) {
+                errors.push(`Invalid days: ${invalidDays.join(', ')}`);
+            }
+        }
+    }
+    
+    // If skills is provided, validate format
+    if (req.body.skills !== undefined) {
+        if (!Array.isArray(req.body.skills)) {
+            errors.push('Skills must be an array');
+        }
+        if (Array.isArray(req.body.skills) && req.body.skills.length > 0) {
+            req.body.skills.forEach((skill, index) => {
+                if (!skill.Skills_id || typeof skill.Skills_id !== 'number') {
+                    errors.push(`Skill at index ${index}: Skills_id must be an integer`);
+                }
+                if (!skill.Experience_level || !['beginner', 'intermediate', 'expert'].includes(skill.Experience_level.toLowerCase())) {
+                    errors.push(`Skill at index ${index}: Experience_level must be beginner, intermediate, or expert`);
+                }
+                if (!skill.Date_acquired || !/^\d{4}-\d{2}-\d{2}$/.test(skill.Date_acquired)) {
+                    errors.push(`Skill at index ${index}: Date_acquired must be in YYYY-MM-DD format`);
+                }
+            });
+        }
+    }
+    
+    if (errors.length > 0) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors
+        });
+    }
+    
+    next();
+};
+
+
 module.exports = {
-    validateProfile
+    validateProfile, // for POST (all fields)
+    validateProfileUpdate // for PUT (only validate whats sent)
 };
