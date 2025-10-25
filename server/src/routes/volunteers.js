@@ -52,16 +52,16 @@ router.get('/db', getAllVolunteersDB);
 // GET /api/volunteers/db/profile - Get profile by user_id from database
 router.get('/db/profile', getProfileDB);
 
-// POST /api/volunteers/db/profile - Create new profile in database
-router.post('/db/profile', validateProfile, createProfileDB);
-
-// PUT /api/volunteers/db/profile - Update profile in database
-router.put('/db/profile', validateProfile, updateProfileDB);
-
 // GET /api/volunteers/db/:id - Get volunteer by ID from database
 router.get('/db/:id', getVolunteerByIdDB);
 
 // GET /api/volunteers/db/:id/skills - Get volunteer skills with details from database
 router.get('/db/:id/skills', getVolunteerSkillsDB);
+
+// POST /api/volunteers/db/profile - Create new profile in database
+router.post('/db/profile', validateProfile, createProfileDB);
+
+// PUT /api/volunteers/db/profile - Update profile in database
+router.put('/db/profile', updateProfileDB);
 
 module.exports = router;
