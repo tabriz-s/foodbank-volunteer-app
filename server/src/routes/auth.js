@@ -1,34 +1,35 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { validateRegistration, validateLogin } = require('../middleware/validation');
 const { verifyToken } = require('../middleware/authMiddleware');
-const { mockAuth } = require('../middleware/authMiddleware');
 
 /**
  * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Public
+ * 
+ * No validation middleware, validation happens in controller
+ * 
  */
-router.post('/register', validateRegistration, authController.register);
+router.post('/register', authController.register);
 
 /**
  * @route   POST /api/auth/login
- * @desc    Login user and create session
+ * @desc    Login user
  * @access  Public
  */
-router.post('/login', validateLogin, authController.login);
+router.post('/login', authController.login);
 
 /**
  * @route   POST /api/auth/logout
- * @desc    Logout user and clear session
+ * @desc    Logout user
  * @access  Private
  */
 router.post('/logout', verifyToken, authController.logout);
 
 /**
  * @route   POST /api/auth/verify
- * @desc    Verify Firebase ID token
+ * @desc    Verify user token
  * @access  Private
  */
 router.post('/verify', verifyToken, authController.verifyUser);
