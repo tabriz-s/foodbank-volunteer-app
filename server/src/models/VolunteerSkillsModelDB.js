@@ -121,7 +121,7 @@ const addMultipleSkills = async (volunteerId, skills) => {
             [values]
         );
 
-    } const (error) {
+    } catch (error) {
         console.error('Error adding multiple skills to volunteer:', error);
         throw error;
     }
@@ -161,7 +161,7 @@ const updateVolunteerSkill = async (volunteerId, skillsId, updates) => {
             `UPDATE volunteer_skills
             SET ${updateFields.join(', ')}
             WHERE Volunteer_id = ? AND Skills_id = ?`,
-            updateValues `
+            updateValues
         );
 
         //  skill not found to update
