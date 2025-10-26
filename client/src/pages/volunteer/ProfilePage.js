@@ -1,11 +1,13 @@
 import React, { useState, useEffect} from 'react';
 import { fetchProfile, createProfile, updateProfile, fetchSkills } from '../../services/ProfileAPI';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ProfilePage = () => {
 
     // mock user data - using user with ID 1. 
     // final app should use authentication content
-    const CURRENT_USER_ID = 1; // change to 3+ to test "new user" change in Profile controller to change user
+    //const CURRENT_USER_ID = 1; // change to 3+ to test "new user" change in Profile controller to change user
+    const { userId } = useAuth(); // Get real user ID from context
 
     const [profileData, setProfileData] = useState({
         full_name: '',
@@ -43,7 +45,7 @@ const ProfilePage = () => {
 
                 // fetch existing profile if it exists - GET
                 try {
-                    const response = await fetchProfile(CURRENT_USER_ID);
+                    const response = await fetchProfile(userId);
 
                     // if profile exists
                     if (response.success && response.data) {
@@ -66,12 +68,12 @@ const ProfilePage = () => {
                         // populate form with fetched data
                         const loadedProfileData = {
                             full_name: fullName,
-                            phone_number: volunteer.phone_number || '',
-                            address_1: volunteer.address_1 || '',
-                            address_2: volunteer.address_2 || '',
-                            city: volunteer.city || '',
-                            state: volunteer.state || '',
-                            zip_code: volunteer.zip_code || '',
+                            phone_number: volunteer.Phone_number || '',
+                            address_1: volunteer.Address_1  || '',
+                            address_2: volunteer.Address_2  || '',
+                            city: volunteer.City  || '',
+                            state: volunteer.State || '',
+                            zip_code: volunteer.Zip_code || '',
                             skills: loadedSkills, // skills loaded into the form
                             preferences: volunteer.Preferences || '',
                             availability_days: availabilityDays
@@ -99,7 +101,7 @@ const ProfilePage = () => {
 
         loadData();
 
-    }, []);
+    }, [userId]);
     
     // handle text inputs
     const handleInputChange = (e) => {
@@ -306,7 +308,7 @@ const ProfilePage = () => {
 
             if (profileExists) {
                 // update the data (PUT)
-                response = await updateProfile(CURRENT_USER_ID, profileData);
+                response = await updateProfile(userId, profileData);
 
                 if (response.success) {
 
@@ -325,7 +327,7 @@ const ProfilePage = () => {
                 // create a new profile - new user
                 response = await createProfile({
                     ...profileData,
-                    user_id: CURRENT_USER_ID // should be a new user.
+                    user_id: userId // should be a new user.
                 });
 
                 if (response.success) {
@@ -799,6 +801,18 @@ const ProfilePage = () => {
             </div>
         );
     };
+
+    // loading check
+    if (!userId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading user information...</p>
+                </div>
+            </div>
+        );
+    }
 
     // switch between what content to render depedning on clicked selection from navbar
     // personal info is the default
