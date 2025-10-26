@@ -28,6 +28,7 @@ const getVolunteerSkillsWithDetails = async (volunteerId) => {
         const [rows] = await connection.query(
             `SELECT
                 vs.Volunteer_id,
+                vs.Skills_id, 
                 vs.Experience_level,
                 vs.Date_acquired,
                 s.Description,

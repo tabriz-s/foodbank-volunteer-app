@@ -42,6 +42,15 @@ const getProfileDB = async (req, res) => {
                 message: 'Volunteer profile not found in database'
             });
         }
+
+        // Get volunteer skills
+        try {
+            const skills = await VolunteerSkillsDB.getVolunteerSkillsWithDetails(volunteer.Volunteer_id);
+            volunteer.skills = skills || [];  // Add skills to volunteer object
+        } catch (skillError) {
+            console.error('Error fetching skills:', skillError);
+            volunteer.skills = [];  // If error, just set empty array
+        }
         
         res.status(200).json({
             success: true,

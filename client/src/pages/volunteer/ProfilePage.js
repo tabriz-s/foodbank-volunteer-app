@@ -33,7 +33,7 @@ const ProfilePage = () => {
     const [originalProfileData, setOriginalProfileData] = useState(null); // store original profile data for when the user hits the cancel button (revert to this state when clicked)
 
     
-    // mock data for testing - replace with real data once database is connected
+    
     useEffect(() => {
         const loadData = async () => {
             try {
@@ -59,11 +59,29 @@ const ProfilePage = () => {
                         const volunteerSkills = volunteer.skills || [];
 
                         // convert skills to fit frontend format
-                        const loadedSkills = volunteerSkills.map(skill => ({
+                        const loadedSkills = volunteerSkills.map(skill => {
+
+                            // Format date from "2023-01-15T06:00:00.000Z" from database to "2023-01-15"
+                            let dateAcquired = '';
+                            if (skill.Date_acquired) {
+                                const date = new Date(skill.Date_acquired);
+                                dateAcquired = date.toISOString().split('T')[0];
+                            }
+
+                            return {
+                                Skills_id: skill.Skills_id,
+                                Description: skill.Description,  // ← Add this
+                                Category: skill.Category,        // ← Add this
+                                Experience_level: skill.Experience_level.toLowerCase(), // toLowerCase() used because frontend expects in lowercase but backend is in uppercase
+                                Date_acquired: dateAcquired
+                            };
+
+                            /*
                             Skills_id: skill.Skills_id,
                             Experience_level: skill.Experience_level,
                             Date_acquired: skill.Date_acquired
-                        }));
+                            */
+                        });
 
                         // populate form with fetched data
                         const loadedProfileData = {
