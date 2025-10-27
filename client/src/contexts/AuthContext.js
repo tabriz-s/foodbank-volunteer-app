@@ -1,10 +1,11 @@
 
-// Temporarily use mock auth for testing
-// When backend is ready, uncomment the real implementation below
-
-export { useAuth, MockAuthProvider as AuthProvider } from './MockAuthContext';
-
 /*
+Temporarily use mock auth for testing
+When backend is ready, uncomment the real implementation below
+export { useAuth, MockAuthProvider as AuthProvider } from './MockAuthContext';
+*/
+
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   createUserWithEmailAndPassword,
@@ -238,4 +239,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export default AuthContext;
-*/
