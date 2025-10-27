@@ -156,7 +156,7 @@ const updateVolunteerSkill = async (volunteerId, skillsId, updates) => {
             throw new Error('No fields to update');
         }
 
-        updateValues.push(volunteerId, skillId); // WHERE clause values
+        updateValues.push(volunteerId, skillsId); // WHERE clause values
 
         const [result] = await connection.query(
             `UPDATE volunteer_skills
