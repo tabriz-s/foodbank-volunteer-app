@@ -13,13 +13,13 @@ export const useAuth = () => {
 
 // Provider component
 export const MockAuthProvider = ({ children }) => {
-  // Mock logged-in as User 1 (Michael Pearson)
+  // Mock logged-in as User 6 
   const [currentUser] = useState({
-    uid: 'mock-firebase-uid-1',
-    email: 'michael.pearson@email.com'
+    uid: 'mock-firebase-uid-6',
+    email: 'testuser6@email.com'
   });
   
-  const [userId] = useState(1);  // ← Testing with User 1
+  const [userId] = useState(6);  // ← Testing with User #
   const [userRole] = useState('volunteer');
   const [userProfile] = useState(null);
   const [loading] = useState(false);

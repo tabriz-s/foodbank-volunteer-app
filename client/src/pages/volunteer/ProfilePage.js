@@ -276,6 +276,7 @@ const ProfilePage = () => {
             newErrors.zip_code = 'Please enter a valid zip code (12345 or 12345-6789)';
         }
 
+        // phone number
         if (!profileData.phone_number.trim()) {
             newErrors.phone_number = 'Phone number is required';
         } else if (!/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/.test(profileData.phone_number)) {
