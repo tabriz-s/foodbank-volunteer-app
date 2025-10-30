@@ -1,3 +1,4 @@
+/*
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -18,5 +19,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 // Initialize Firestore Database for mock login data
 export const db = getFirestore(app);
+*/
 
-export default app;
+// Temporary: Export empty objects for testing
+export const auth = null;
+export const db = null;
+
+//export default app;
