@@ -4,8 +4,8 @@ import axios from 'axios';
 import './App.css';
 
 // Import AuthProvider
-import { AuthProvider } from './contexts/AuthContext';
-//import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
+//import { AuthProvider } from './contexts/AuthContext';
+import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
 
 // Import components
 import Navbar from './components/common/Navbar';
@@ -61,7 +61,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
-    <AuthProvider>
+    <MockAuthProvider>
       <NotificationProvider>
         <Router>
           <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -142,7 +142,7 @@ function App() {
           </div>
         </Router>
       </NotificationProvider>
-    </AuthProvider>
+    </MockAuthProvider>
   );
 }
 
