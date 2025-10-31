@@ -84,4 +84,4 @@ exports.requireRole = (allowedRoles) => {
 };
 
 exports.requireAdmin = exports.requireRole(['admin']);
-exports.requireVolunteerOrAdmin = exports.requireRole(['volunteer', 'admin']);z
+exports.requireVolunteerOrAdmin = exports.requireRole(['volunteer', 'admin']);
