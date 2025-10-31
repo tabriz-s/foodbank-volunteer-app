@@ -8,44 +8,18 @@ import {
     deleteVolunteerMatch,
 } from "../../services/VolunteerMatchingAPI";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-// Mock data; to use fetch call once event API implemented.
-const mockEvents = [
-    {
-        id: 101,
-        name: "Weekly Food Distribution",
-        location: "Community Center",
-        date: "2025-10-20",
-        urgency: "Medium",
-        skills: ["Customer Service"],
-    },
-    {
-        id: 102,
-        name: "Canned Goods Sorting",
-        location: "Food Bank Warehouse",
-        date: "2025-11-02",
-        urgency: "Low",
-        skills: ["Organization"],
-    },
-    {
-        id: 103,
-        name: "Emergency Relief Packing",
-        location: "Distribution Hub",
-        date: "2025-12-01",
-        urgency: "High",
-        skills: ["Teamwork", "Efficiency"],
-    },
-];
 
 const VolunteerMatchingForm = () => {
     const [volunteers, setVolunteers] = useState([]);
+    const [events, setEvents] = useState([]);
     const [selectedVolunteer, setSelectedVolunteer] = useState("");
     const [selectedEvent, setSelectedEvent] = useState("");
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingMatches, setLoadingMatches] = useState(true);
-    const [loadingVolunteers, setLoadingVolunteers] = useState(true);
+    const [message, setMessage] = useState("");
 
     // Notification context for real-time feedback
     const { addNotification } = useContext(NotificationContext);
@@ -53,29 +27,43 @@ const VolunteerMatchingForm = () => {
     // Load all volunteers from backend on component mount
     useEffect(() => {
         const fetchVolunteers = async () => {
+            const res = await fetch(`${API_BASE_URL}/volunteers/db`);
+            const data = await res.json();
+            if (data.success) {
+                const formatted = data.data.map(v => ({
+                    id: v.Volunteer_id,
+                    name: `${v.First_name} ${v.Last_name}`,
+                }));
+                setVolunteers(formatted);
+            }
+        };
+
+        const fetchEvents = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/volunteers`);
-                const data = await response.json();
+                const res = await fetch(`${API_BASE_URL}/events`);
+                const data = await res.json();
 
                 if (data.success && Array.isArray(data.data)) {
-                    // Normalize to simple id + name objects
-                    const formatted = data.data.map((v) => ({
-                        id: v.Volunteer_id,
-                        name: `${v.First_name} ${v.Last_name}`,
+                    const formatted = data.data.map((e) => ({
+                        id: e.Event_id,
+                        name: e.name || "Unnamed Event", // Use correct field
+                        description: e.description,
+                        location: e.location,
+                        urgency: e.urgency,
+                        date: e.date,
                     }));
-                    setVolunteers(formatted);
-                } else {
-                    console.error("Unexpected volunteer API format:", data);
+
+                    setEvents(formatted); // Ensure you have const [events, setEvents] = useState([])
                 }
             } catch (err) {
-                console.error("Error fetching volunteers:", err);
-            } finally {
-                setLoadingVolunteers(false);
+                console.error("Error fetching events:", err);
             }
         };
 
         fetchVolunteers();
+        fetchEvents();
     }, []);
+
 
     // Load all matches from backend on component mount
     useEffect(() => {
@@ -84,16 +72,12 @@ const VolunteerMatchingForm = () => {
                 const result = await fetchAllMatches();
                 if (result.success) {
                     // Combine IDs with volunteer + event names
-                    const detailedMatches = result.data.map((m) => {
-                        const volunteer = volunteers.find((v) => v.id === m.volunteerId);
-                        const event = mockEvents.find((e) => e.id === m.eventId);
-                        return {
-                            volunteerId: m.volunteerId,
-                            eventId: m.eventId,
-                            volunteer: volunteer ? volunteer.name : `Volunteer ${m.volunteerId}`,
-                            event: event ? event.name : `Event ${m.eventId}`,
-                        };
-                    });
+                    const detailedMatches = result.data.map((m) => ({
+                        volunteerId: m.Volunteer_id,
+                        eventId: m.Event_id,
+                        volunteer: m.VolunteerName || `Volunteer ${m.Volunteer_id}`,
+                        event: m.EventName || `Event ${m.Event_id}`,
+                    }));
                     setMatches(detailedMatches);
                 }
             } catch (error) {
@@ -111,58 +95,52 @@ const VolunteerMatchingForm = () => {
         e.preventDefault();
 
         if (!selectedVolunteer || !selectedEvent) {
-            alert("Please select both a volunteer and an event.");
+            setMessage("Please select both a volunteer and an event.");
             return;
         }
 
-        const volunteer = volunteers.find((v) => v.id === parseInt(selectedVolunteer));
-        const event = mockEvents.find((ev) => ev.id === parseInt(selectedEvent));
+        setLoading(true);
+        setMessage("");
 
         try {
-            setLoading(true);
-
-            // Call backend API to create match + update history
-            const result = await createVolunteerMatch(volunteer.id, event.id, event);
-
-            // Update local matches
-            setMatches((prev) => [
-                ...prev,
-                {
-                    volunteerId: volunteer.id,
-                    eventId: event.id,
-                    volunteer: volunteer.name,
-                    event: event.name,
-                },
-            ]);
-
-            // Push a notification
-            addNotification({
-                type: "assignment",
-                message: `${volunteer.name} has been assigned to ${event.name}.`,
-                time: "Just now",
+            const res = await fetch(`${API_BASE_URL}/matching`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    volunteerId: selectedVolunteer,
+                    eventId: selectedEvent,
+                }),
             });
 
-            // Send notifications to backend
-            await createNotification({
-                recipientType: "admin",
-                recipientId: 99, // mock admin ID (use actual logged-in user ID later)
-                message: `${volunteer.name} has been assigned to ${event.name}.`,
-            });
+            const data = await res.json();
 
-            await createNotification({
-                recipientType: "volunteer",
-                recipientId: volunteer.id,
-                message: `You have been assigned to ${event.name}.`,
-            });
+            if (res.ok && data.success) {
+                // Success message
+                setMessage("Volunteer successfully assigned to event!");
 
-            console.log("Match created:", result);
+                // Add new match instantly
+                const volunteer = volunteers.find(v => v.id === parseInt(selectedVolunteer));
+                const event = events.find(e => e.id === parseInt(selectedEvent));
 
-            // Reset form
-            setSelectedVolunteer("");
-            setSelectedEvent("");
-        } catch (error) {
-            console.error("Error creating match:", error);
-            alert(error.message);
+                setMatches(prev => [
+                    ...prev,
+                    {
+                        volunteerId: parseInt(selectedVolunteer),
+                        eventId: parseInt(selectedEvent),
+                        volunteer: volunteer ? volunteer.name : `Volunteer ${selectedVolunteer}`,
+                        event: event ? event.name : `Event ${selectedEvent}`,
+                    },
+                ]);
+
+                // Reset dropdowns
+                setSelectedVolunteer("");
+                setSelectedEvent("");
+            } else {
+                setMessage(`Error: ${data.message || "Failed to assign volunteer"}`);
+            }
+        } catch (err) {
+            console.error("Error assigning volunteer:", err);
+            setMessage("Server error. Please try again later.");
         } finally {
             setLoading(false);
         }
@@ -170,13 +148,35 @@ const VolunteerMatchingForm = () => {
 
     // Handle unassigning volunteers
     const handleDelete = async (match) => {
+        console.log("Deleting match:", match);
         try {
-            await deleteVolunteerMatch(match.volunteerId, match.eventId);
+            // Call backend DELETE route
+            const res = await fetch(`${API_BASE_URL}/matching?volunteerId=${match.volunteerId}&eventId=${match.eventId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    volunteerId: match.volunteerId,
+                    eventId: match.eventId,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "Failed to unassign volunteer.");
+            }
+
+            // Update frontend state
             setMatches((prev) =>
                 prev.filter(
-                    (m) => !(m.volunteerId === match.volunteerId && m.eventId === match.eventId)
+                    (m) =>
+                        !(
+                            m.volunteerId === match.volunteerId &&
+                            m.eventId === match.eventId
+                        )
                 )
             );
+
             // Local notification
             addNotification({
                 type: "removal",
@@ -185,23 +185,26 @@ const VolunteerMatchingForm = () => {
             });
 
             // Send notifications to backend
-            await createNotification({
-                recipientType: "admin",
-                recipientId: 99, // mock admin ID (use actual logged-in user ID later)
-                message: `${match.volunteer} has been unassigned from ${match.event}.`,
-            });
+            await Promise.all([
+                createNotification({
+                    recipientType: "admin",
+                    recipientId: 99, // mock admin ID (replace with logged-in user ID later)
+                    message: `${match.volunteer} has been unassigned from ${match.event}.`,
+                }),
+                createNotification({
+                    recipientType: "volunteer",
+                    recipientId: match.volunteerId,
+                    message: `You have been unassigned from ${match.event}.`,
+                }),
+            ]);
 
-            await createNotification({
-                recipientType: "volunteer",
-                recipientId: match.volunteerId,
-                message: `You have been unassigned from ${match.event}.`,
-            });
-
+            console.log("✅ Volunteer unassigned successfully.");
         } catch (error) {
-            console.error("Error deleting match:", error);
-            alert(error.message);
+            console.error("❌ Error deleting match:", error);
+            alert(error.message || "Server error while unassigning volunteer.");
         }
     };
+
 
     return (
         <div className="max-w-lg mx-auto mt-8 bg-white shadow rounded-lg p-6">
@@ -233,7 +236,7 @@ const VolunteerMatchingForm = () => {
                     className="w-full border p-2 rounded"
                 >
                     <option value="">Select Event</option>
-                    {mockEvents.map((ev) => (
+                    {events.map((ev) => (
                         <option key={ev.id} value={ev.id}>
                             {ev.name}
                         </option>

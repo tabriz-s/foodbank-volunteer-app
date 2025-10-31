@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { fetchVolunteerHistory } from "../../services/VolunteerHistoryAPI";
 import { useAuth } from "../../contexts/MockAuthContext";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const VolunteerHistory = () => {
     const { userRole } = useAuth();
@@ -156,7 +156,7 @@ const VolunteerHistory = () => {
                                     <td className="p-3 border">
                                         {Array.isArray(row.Skills)
                                             ? row.Skills.join(", ")
-                                            : row.Skills}
+                                            : row.Skills || "Any"}
                                     </td>
                                     <td className="p-3 border">{row.Urgency}</td>
                                     <td
