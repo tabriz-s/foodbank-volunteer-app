@@ -174,22 +174,35 @@ const registerForEvent = async (req, res) => {
             });
         }
 
-        if (!registered_skill_id) {
+        // Get event details to check if skills are required
+        const event = await EventSignupModelDB.getEventWithSkills(event_id);
+        
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: 'Event not found'
+            });
+        }
+
+        // Only require skill selection if event has required skills
+        const hasRequiredSkills = event.required_skills && event.required_skills.length > 0;
+        
+        if (hasRequiredSkills && !registered_skill_id) {
             return res.status(400).json({
                 success: false,
                 message: 'You must select which skill role you want to fill'
             });
         }
 
-        // Create signup
+        // Create signup (registered_skill_id can be null for events with no required skills)
         const signup = await EventSignupModelDB.createSignup(
             volunteer_id,
             event_id,
-            registered_skill_id
+            registered_skill_id || null  // Pass null if no skill selected
         );
 
         // Get event details to return
-        const event = await EventSignupModelDB.getEventById(event_id);
+        const eventDetails = await EventSignupModelDB.getEventById(event_id);
 
         res.status(201).json({
             success: true,
@@ -197,7 +210,7 @@ const registerForEvent = async (req, res) => {
             message: 'Successfully registered for event',
             data: {
                 signup,
-                event
+                event: eventDetails
             }
         });
     } catch (error) {

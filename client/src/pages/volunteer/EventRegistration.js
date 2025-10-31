@@ -66,14 +66,20 @@ const EventRegistration = () => {
     };
 
     const handleRegisterConfirm = async () => {
-        if (!selectedSkill) {
+        // Only require skill selection if event has required skills
+        if (selectedEvent.required_skills && selectedEvent.required_skills.length > 0 && !selectedSkill) {
             alert('Please select a skill role');
             return;
         }
 
         try {
             setRegistering(true);
-            await registerForEvent(userId, selectedEvent.Event_id, selectedSkill);
+            // Pass null for selectedSkill if no skills required
+            const skillToRegister = selectedEvent.required_skills && selectedEvent.required_skills.length > 0 
+                ? selectedSkill 
+                : null;
+            
+            await registerForEvent(userId, selectedEvent.Event_id, skillToRegister);
             
             // Reload events data
             await loadEventsData();
@@ -311,8 +317,13 @@ const EventRegistration = () => {
                     </div>
 
                     {/* Skill Selection */}
+                    {/* here */}
                     <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-3">Select Your Role:</h4>
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                            {selectedEvent.required_skills && selectedEvent.required_skills.length > 0 
+                                ? 'Select Your Role:' 
+                                : 'Event Details:'}
+                        </h4>
                         <div className="space-y-3">
                             {selectedEvent.required_skills && selectedEvent.required_skills.length > 0 ? (
                                 selectedEvent.required_skills.map((skill) => {
@@ -350,11 +361,14 @@ const EventRegistration = () => {
                                     );
                                 })
                             ) : (
-                                <p className="text-gray-600">No specific skills required for this event.</p>
+                                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                                    <p className="text-green-800 font-medium">✓ No specific skills required!</p>
+                                    <p className="text-green-700 text-sm mt-1">Anyone can volunteer for this event.</p>
+                                </div>
                             )}
                         </div>
                     </div>
-
+                    {/* here */}
                     {/* Action Buttons */}
                     <div className="flex gap-3">
                         <button
@@ -364,13 +378,18 @@ const EventRegistration = () => {
                         >
                             Cancel
                         </button>
+                        {/* here */}
                         <button
                             onClick={handleRegisterConfirm}
-                            disabled={!selectedSkill || registering}
+                            disabled={
+                                (selectedEvent.required_skills && selectedEvent.required_skills.length > 0 && !selectedSkill) 
+                                || registering
+                            }
                             className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                             {registering ? 'Registering...' : 'Confirm Registration'}
                         </button>
+                        {/* here */}
                     </div>
                 </div>
             </div>
