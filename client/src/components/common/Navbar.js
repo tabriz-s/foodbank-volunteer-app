@@ -59,6 +59,9 @@ const Navbar = () => {
                 <Link to="/admin/matching" className="text-gray-700 hover:text-blue-600 transition-colors">
                   Match Volunteers
                 </Link>
+                <Link to="/admin/reports" className="text-gray-700 hover:text-blue-600 transition-colors">
+                  Reports
+                </Link>
               </>
             )}
             
@@ -72,7 +75,7 @@ const Navbar = () => {
           {/* Auth Section */}
           <div className="flex items-center space-x-4">
             {currentUser ? (
-              // Logged in - Show user menu
+              // Logged in, Show user menu
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
@@ -135,12 +138,12 @@ const Navbar = () => {
                         {userRole === 'admin' && (
                           <>
                             <Link
-                              to="/admin/dashboard"
+                              to="/admin/reports"
                               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               onClick={() => setShowUserMenu(false)}
                             >
-                              <span className="mr-2">🏠</span>
-                              Dashboard
+                              <span className="mr-2">📄</span>
+                              Reports
                             </Link>
                             <Link
                               to="/admin/events"

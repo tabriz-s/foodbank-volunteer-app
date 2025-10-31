@@ -4,8 +4,8 @@ import axios from 'axios';
 import './App.css';
 
 // Import AuthProvider
-//import { AuthProvider } from './contexts/AuthContext';
-import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
+import { AuthProvider } from './contexts/AuthContext';
+//import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
 
 // Import components
 import Navbar from './components/common/Navbar';
@@ -26,6 +26,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import ManageEvents from './pages/admin/ManageEvents';
 import VolunteerMatchingForm from "./components/admin/VolunteerMatchingForm";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import Reports from './pages/admin/Reports';
 
 // Temporary mock user (replace later with real login data)
 const currentUser = { id: 99, role: "admin", name: "Admin User" };
@@ -61,7 +62,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
-    <MockAuthProvider>
+    <AuthProvider>
       <NotificationProvider>
         <Router>
           <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -88,47 +89,55 @@ function App() {
                 <Route path="/register" element={<Register />} />
 
                 {/* Volunteer Routes - Protected */}
-                <Route 
-                  path="/volunteer/profile" 
+                <Route
+                  path="/volunteer/profile"
                   element={
                     <ProtectedRoute allowedRoles={['volunteer']}>
                       <ProfilePage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/volunteer/history" 
+                <Route
+                  path="/volunteer/history"
                   element={
                     <ProtectedRoute allowedRoles={['volunteer']}>
                       <VolunteerHistory />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
 
                 {/* Admin Routes - Protected */}
-                <Route 
-                  path="/admin/dashboard" 
+                <Route
+                  path="/admin/dashboard"
                   element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <AdminDashboard />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/events" 
+                <Route
+                  path="/admin/events"
                   element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <ManageEvents />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/matching" 
+                <Route
+                  path="/admin/matching"
                   element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <VolunteerMatchingForm />
                     </ProtectedRoute>
-                  } 
+                  }
+                />
+                <Route
+                  path="/admin/reports"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <Reports />
+                    </ProtectedRoute>
+                  }
                 />
 
                 {/* Catch all route - redirect to home */}
@@ -142,7 +151,7 @@ function App() {
           </div>
         </Router>
       </NotificationProvider>
-    </MockAuthProvider>
+    </AuthProvider>
   );
 }
 

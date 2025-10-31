@@ -52,6 +52,9 @@ app.use('/api', require('./routes/matching'));
 // Notification routes
 app.use("/api", require("./routes/notification"));
 
+// Report routes
+app.use('/api/reports', require('./routes/reports'));
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
