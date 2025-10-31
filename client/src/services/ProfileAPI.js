@@ -4,7 +4,7 @@ const API_BASE_URL = 'http://localhost:5000/api';
 // fetch profile for the user (volunteer)
 export const fetchProfile = async (userId) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile?user_id=${userId}`, {  // ← Added /db
+        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile?user_id=${userId}`, {  
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export const fetchProfile = async (userId) => {
 // get skills (only skills)
 export const fetchSkills = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/skills/db`, {  // ← Added /db
+        const response = await fetch(`${API_BASE_URL}/skills/db`, {  
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export const fetchSkills = async () => {
 // create a new profile
 export const createProfile = async (profileData) => {
     try{
-        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile`, {  // ← Added /db
+        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile`, {  
            method: 'POST',
            headers: {
             'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export const createProfile = async (profileData) => {
 // Update existing user profile
 export const updateProfile = async (userId, profileData) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile?user_id=${userId}`, {  // ← Added /db
+        const response = await fetch(`${API_BASE_URL}/volunteers/db/profile?user_id=${userId}`, {  
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
