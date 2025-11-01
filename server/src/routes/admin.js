@@ -1,14 +1,24 @@
 const express = require('express');
 const router = express.Router();
+
+// Mock data controllers
 const {
     getDashboardStats,
     getRecentActivities
 } = require('../controllers/AdminController');
 
-///api/admin/dashboard - gets dashboard statistics
-router.get('/dashboard', getDashboardStats);
+// Database controllers
+const {
+    getDashboardStatsDB,
+    getRecentActivitiesDB
+} = require('../controllers/AdminControllerDB');
 
-///api/admin/activities -gets recent activities
+// MOCK
+router.get('/dashboard', getDashboardStats);
 router.get('/activities', getRecentActivities);
+
+// REAL Routes
+router.get('/db/dashboard', getDashboardStatsDB);
+router.get('/db/activities', getRecentActivitiesDB);
 
 module.exports = router;
