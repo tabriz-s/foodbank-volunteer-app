@@ -5,17 +5,19 @@ const {
     deleteVolunteerMatch,
 } = require("../../src/controllers/VolunteerMatchingController");
 
-const matchingModel = require("../../src/models/VolunteerMatchingModel");
-const historyModel = require("../../src/models/VolunteerHistoryModel");
+const { getConnection } = require("../../src/config/database");
 
-jest.mock("../../src/models/VolunteerMatchingModel");
-jest.mock("../../src/models/VolunteerHistoryModel");
+// Mock the DB connection
+jest.mock("../../src/config/database");
 
-describe("VolunteerMatchingController", () => {
-    let req, res;
+describe("VolunteerMatchingController (DB version)", () => {
+    let req, res, mockConn;
 
     beforeEach(() => {
-        req = { body: {}, params: {} };
+        mockConn = { query: jest.fn() };
+        getConnection.mockResolvedValue(mockConn);
+
+        req = { body: {}, params: {}, query: {} };
         res = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn(),
@@ -24,30 +26,55 @@ describe("VolunteerMatchingController", () => {
     });
 
     // ---------- createMatch ----------
-    test("should return 400 if volunteerId or eventId missing", () => {
+    test("should return 400 if volunteerId or eventId missing", async () => {
         req.body = { eventId: 1 }; // missing volunteerId
-        createMatch(req, res);
+
+        await createMatch(req, res);
+
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ success: false })
         );
     });
 
-    test("should create match and add to history", () => {
-        req.body = { volunteerId: 1, eventId: 101, eventData: { id: 101, name: "Test" } };
-        matchingModel.addMatch.mockReturnValue({ volunteerId: 1, eventId: 101 });
-        historyModel.addVolunteerHistory.mockReturnValue(true);
+    test("should insert into both volunteer_assignments and volunteer_history", async () => {
+        req.body = { volunteerId: 1, eventId: 2 };
+        mockConn.query.mockResolvedValueOnce([{ insertId: 10 }]); // assignments
+        mockConn.query.mockResolvedValueOnce([{ insertId: 11 }]); // history
 
-        createMatch(req, res);
-        expect(matchingModel.addMatch).toHaveBeenCalled();
-        expect(historyModel.addVolunteerHistory).toHaveBeenCalled();
+        await createMatch(req, res);
+
+        expect(mockConn.query).toHaveBeenCalledTimes(2);
+        expect(mockConn.query).toHaveBeenCalledWith(
+            expect.stringContaining("INSERT INTO volunteer_assignments"),
+            [1, 2]
+        );
+        expect(mockConn.query).toHaveBeenCalledWith(
+            expect.stringContaining("INSERT INTO volunteer_history"),
+            [1, 2]
+        );
         expect(res.status).toHaveBeenCalledWith(201);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: true })
+        );
     });
 
     // ---------- getAllVolunteerMatches ----------
-    test("should get all matches", () => {
-        matchingModel.getAllMatches.mockReturnValue([{ volunteerId: 1, eventId: 101 }]);
-        getAllVolunteerMatches(req, res);
+    test("should fetch all matches and return 200", async () => {
+        mockConn.query.mockResolvedValueOnce([
+            [
+                {
+                    Volunteer_id: 1,
+                    Event_id: 2,
+                    VolunteerName: "John Doe",
+                    EventName: "Food Drive",
+                },
+            ],
+        ]);
+
+        await getAllVolunteerMatches(req, res);
+
+        expect(mockConn.query).toHaveBeenCalledWith(expect.stringContaining("SELECT"));
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
             expect.objectContaining({ success: true, data: expect.any(Array) })
@@ -55,37 +82,117 @@ describe("VolunteerMatchingController", () => {
     });
 
     // ---------- getMatchesForVolunteer ----------
-    test("should get matches for a specific volunteer", () => {
-        req.params.volunteerId = 1;
-        matchingModel.getMatchesByVolunteer.mockReturnValue([{ volunteerId: 1 }]);
-        getMatchesForVolunteer(req, res);
+    test("should return matches for a volunteer", async () => {
+        req.params.volunteerId = 5;
+        mockConn.query.mockResolvedValueOnce([
+            [{ Event_name: "Food Distribution", Location: "UH Campus" }],
+        ]);
+
+        await getMatchesForVolunteer(req, res);
+
+        expect(mockConn.query).toHaveBeenCalledWith(
+            expect.stringContaining("WHERE va.Volunteer_id = ?"),
+            [5]
+        );
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ success: true, data: expect.any(Array) })
+            expect.objectContaining({ success: true })
         );
     });
 
     // ---------- deleteVolunteerMatch ----------
-    test("should return 400 if volunteerId or eventId missing on delete", () => {
-        req.body = { volunteerId: 1 }; // missing eventId
-        deleteVolunteerMatch(req, res);
+    test("should return 400 if volunteerId or eventId missing", async () => {
+        req.query = { volunteerId: 1 }; // missing eventId
+
+        await deleteVolunteerMatch(req, res);
+
         expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false })
+        );
     });
 
-    test("should return 404 if match not found", () => {
-        req.body = { volunteerId: 1, eventId: 999 };
-        matchingModel.deleteMatch.mockReturnValue(false);
-        deleteVolunteerMatch(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
-    });
+    test("should delete both assignment and history entries", async () => {
+        req.query = { volunteerId: 1, eventId: 2 };
+        mockConn.query.mockResolvedValue([{ affectedRows: 1 }]);
 
-    test("should delete match and update history", () => {
-        req.body = { volunteerId: 1, eventId: 101 };
-        matchingModel.deleteMatch.mockReturnValue(true);
-        historyModel.deleteHistoryByEvent.mockReturnValue(true);
-        deleteVolunteerMatch(req, res);
-        expect(matchingModel.deleteMatch).toHaveBeenCalled();
-        expect(historyModel.deleteHistoryByEvent).toHaveBeenCalled();
+        await deleteVolunteerMatch(req, res);
+
+        expect(mockConn.query).toHaveBeenCalledTimes(2);
+        expect(mockConn.query).toHaveBeenCalledWith(
+            expect.stringContaining("DELETE FROM volunteer_assignments"),
+            [1, 2]
+        );
+        expect(mockConn.query).toHaveBeenCalledWith(
+            expect.stringContaining("DELETE FROM volunteer_history"),
+            [1, 2]
+        );
         expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: true })
+        );
     });
 });
+
+// ---------- ERROR handling tests ----------
+describe("VolunteerMatchingController error handling", () => {
+    let req, res, mockConn;
+
+    beforeEach(() => {
+        mockConn = { query: jest.fn() };
+        getConnection.mockResolvedValue(mockConn);
+        req = { body: {}, params: {}, query: {} };
+        res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+        };
+    });
+
+    test("createMatch should handle DB error", async () => {
+        req.body = { volunteerId: 1, eventId: 2 };
+        mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+
+        await createMatch(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false })
+        );
+    });
+
+    test("getAllVolunteerMatches should handle DB error", async () => {
+        mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+
+        await getAllVolunteerMatches(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false })
+        );
+    });
+
+    test("getMatchesForVolunteer should handle DB error", async () => {
+        req.params.volunteerId = 1;
+        mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+
+        await getMatchesForVolunteer(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false })
+        );
+    });
+
+    test("deleteVolunteerMatch should handle DB error", async () => {
+        req.query = { volunteerId: 1, eventId: 2 };
+        mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+
+        await deleteVolunteerMatch(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ success: false })
+        );
+    });
+});
+
