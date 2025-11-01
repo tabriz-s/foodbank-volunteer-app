@@ -1,0 +1,52 @@
+
+> server@1.0.0 test:coverage
+> jest --coverage
+
+---------------------------------|---------|----------|---------|---------|-------------------------------------
+File                             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                   
+---------------------------------|---------|----------|---------|---------|-------------------------------------
+All files                        |   77.19 |    73.18 |   82.58 |    77.5 |                                     
+ config                          |   85.29 |      100 |   83.33 |   85.29 |                                     
+  database.js                    |      84 |      100 |     100 |      84 | 27-28,37-38                         
+  firebase-admin.js              |   88.88 |      100 |   66.66 |   88.88 | 28                                  
+ controllers                     |   88.18 |    78.54 |   97.91 |   89.36 |                                     
+  AdminController.js             |   84.61 |      100 |     100 |   84.61 | 13,33                               
+  EventController.js             |   71.83 |    60.71 |   83.33 |   76.56 | 15,40,50-68,109,124,158,173,182,195 
+  HistoryController.js           |     100 |    92.59 |     100 |     100 | 35,50                               
+  NotificationController.js      |     100 |       90 |     100 |     100 | 6                                   
+  ProfileController.js           |    86.9 |    62.74 |     100 |      88 | 18,55,92,213,227-238                
+  ProfileControllerDB.js         |   90.62 |    87.87 |     100 |   91.86 | 61-62,88-89,178-180                 
+  SkillsController.js            |     100 |      100 |     100 |     100 |                                     
+  SkillsControllerDB.js          |     100 |      100 |     100 |     100 |                                     
+  VolunteerMatchingController.js |     100 |    91.66 |     100 |     100 | 27                                  
+  authController.js              |    83.9 |    77.14 |     100 |   83.13 | 51-73,152-183                       
+ middleware                      |   86.18 |    84.56 |   92.59 |   86.36 |                                     
+  EventValidation.js             |    62.5 |       50 |      75 |   63.15 | 31,51,99-124                        
+  RoleMiddleware.js              |     100 |      100 |     100 |     100 |                                     
+  VolunteerMiddleware.js         |   89.74 |       87 |     100 |   89.33 | 77,95,125,132,145,152,162,186       
+  authMiddleware.js              |    93.1 |      100 |     100 |    93.1 | 77-78                               
+  validation.js                  |     100 |      100 |     100 |     100 |                                     
+ models                          |   62.17 |    53.12 |   74.35 |   61.64 |                                     
+  AdminModel.js                  |     100 |      100 |     100 |     100 |                                     
+  EventModel.js                  |   82.92 |       75 |    64.7 |   87.09 | 51,56,61-62                         
+  EventSignupModelDB.js          |       0 |        0 |       0 |       0 | 1-584                               
+  NotificationModel.js           |     100 |       90 |     100 |     100 | 30                                  
+  SkillsModel.js                 |     100 |      100 |     100 |     100 |                                     
+  SkillsModelDB.js               |     100 |      100 |     100 |     100 |                                     
+  VolunteerHistoryModel.js       |     100 |    86.36 |     100 |     100 | 79,89,109                           
+  VolunteerMatchingModel.js      |     100 |      100 |     100 |     100 |                                     
+  VolunteerModel.js              |     100 |      100 |     100 |     100 |                                     
+  VolunteerModelDB.js            |   95.06 |      100 |     100 |   95.06 | 49-50,73-74                         
+  VolunteerSkillsModel.js        |     100 |       80 |     100 |     100 | 35-36                               
+  VolunteerSkillsModelDB.js      |    97.4 |      100 |     100 |   97.36 | 46-47                               
+ routes                          |   98.92 |      100 |   66.66 |   98.92 |                                     
+  admin.js                       |     100 |      100 |     100 |     100 |                                     
+  auth.js                        |     100 |      100 |     100 |     100 |                                     
+  events.js                      |     100 |      100 |     100 |     100 |                                     
+  history.js                     |     100 |      100 |     100 |     100 |                                     
+  matching.js                    |     100 |      100 |     100 |     100 |                                     
+  notification.js                |     100 |      100 |     100 |     100 |                                     
+  skills.js                      |     100 |      100 |     100 |     100 |                                     
+  test.js                        |    90.9 |      100 |   66.66 |    90.9 | 41                                  
+  volunteers.js                  |     100 |      100 |     100 |     100 |                                     
+---------------------------------|---------|----------|---------|---------|-------------------------------------

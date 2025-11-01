@@ -1,11 +1,3 @@
-
-
-//Temporarily use mock auth for testing
-//When backend is ready, uncomment the real implementation below
-export { useAuth, MockAuthProvider as AuthProvider } from './MockAuthContext';
-
-
-/*
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   createUserWithEmailAndPassword,
@@ -21,7 +13,6 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-// Hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -32,8 +23,10 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userId, setUserId] = useState(null); // MySQL User_id
   const [userRole, setUserRole] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [profileCompleted, setProfileCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -59,7 +52,7 @@ export const AuthProvider = ({ children }) => {
   // Register new user with role
   const signup = async (email, password, role = 'volunteer', displayName = '') => {
     try {
-      // Create user in Firebase Auth
+      // Step 1: Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -68,7 +61,7 @@ export const AuthProvider = ({ children }) => {
         await updateProfile(user, { displayName });
       }
 
-      // Store user role and basic info in Firestore
+      // Step 2: Store user role in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         displayName: displayName,
@@ -77,20 +70,30 @@ export const AuthProvider = ({ children }) => {
         profileCompleted: false
       });
 
-      // Notify backend about new user
+      // Step 3: Sync to backend (Azure MySQL)
       try {
-        await axios.post(`${API_BASE_URL}/auth/register`, {
+        const response = await axios.post(`${API_BASE_URL}/auth/register`, {
           uid: user.uid,
           email: user.email,
+          password: password, // Backend will hash it
           role: role,
           displayName: displayName
         });
+
+        if (response.data.success) {
+          console.log('User synced to database:', response.data.user);
+          setUserId(response.data.user.id); // Store MySQL User_id
+        }
       } catch (backendError) {
         console.error('Backend registration error:', backendError);
-        // Continue even if backend fails - Firebase user is created
+        // If backend fails, delete Firebase user to maintain consistency
+        await user.delete();
+        throw new Error('Failed to sync with database');
       }
 
       setUserRole(role);
+      setProfileCompleted(false);
+      
       return userCredential;
     } catch (error) {
       setError(error.message);
@@ -101,27 +104,40 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (email, password) => {
     try {
+      // Step 1: Firebase authentication
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Fetch user role from Firestore
+      // Step 2: Fetch user role from Firestore
       const role = await fetchUserRole(user.uid);
 
-      // Get ID token for backend verification
+      // Step 3: Get ID token for backend verification
       const idToken = await user.getIdToken();
 
-      // Notify backend about login
+      // Step 4: Notify backend and get user data
       try {
-        await axios.post(`${API_BASE_URL}/auth/login`, {
+        const response = await axios.post(`${API_BASE_URL}/auth/login`, {
           uid: user.uid,
           email: user.email,
+          password: password,
           idToken: idToken
         });
+
+        if (response.data.success) {
+          const userData = response.data.user;
+          setUserId(userData.id); // MySQL User_id
+          setUserRole(userData.role);
+          setProfileCompleted(userData.profileCompleted || false);
+          setUserProfile(userData.profileData);
+          
+          console.log('Login successful:', userData);
+        }
       } catch (backendError) {
         console.error('Backend login error:', backendError);
+        // Continue with Firebase data even if backend fails
       }
 
-      return { user, role };
+      return { user, role, profileCompleted };
     } catch (error) {
       setError(error.message);
       throw error;
@@ -134,6 +150,8 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
       setUserRole(null);
       setUserProfile(null);
+      setUserId(null);
+      setProfileCompleted(false);
       
       // Clear backend session
       try {
@@ -157,21 +175,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Update user profile in Firestore
+  // Update user profile in both Firestore and MySQL
   const updateUserProfile = async (uid, profileData) => {
     try {
+      // Update Firestore
       await setDoc(doc(db, 'users', uid), {
         ...profileData,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        profileCompleted: true
       }, { merge: true });
 
-      // Update backend
+      // Update backend (MySQL)
       const idToken = await auth.currentUser.getIdToken();
-      await axios.put(`${API_BASE_URL}/users/profile`, profileData, {
+      await axios.put(`${API_BASE_URL}/users/profile`, {
+        userId: userId, // MySQL User_id
+        ...profileData
+      }, {
         headers: { Authorization: `Bearer ${idToken}` }
       });
 
       setUserProfile(prev => ({ ...prev, ...profileData }));
+      setProfileCompleted(true);
     } catch (error) {
       setError(error.message);
       throw error;
@@ -204,21 +228,45 @@ export const AuthProvider = ({ children }) => {
       if (user) {
         // Fetch user role and profile when auth state changes
         await fetchUserRole(user.uid);
+        
+        // Try to get user data from backend
+        try {
+          const idToken = await user.getIdToken();
+          const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+            uid: user.uid,
+            email: user.email,
+            idToken: idToken
+          });
+
+          if (response.data.success) {
+            const userData = response.data.user;
+            setUserId(userData.id);
+            setUserRole(userData.role);
+            setProfileCompleted(userData.profileCompleted || false);
+            setUserProfile(userData.profileData);
+          }
+        } catch (error) {
+          console.error('Error fetching user data on auth state change:', error);
+        }
       } else {
         setUserRole(null);
         setUserProfile(null);
+        setUserId(null);
+        setProfileCompleted(false);
       }
       
       setLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [API_BASE_URL]);
 
   const value = {
     currentUser,
+    userId, // MySQL User_id
     userRole,
     userProfile,
+    profileCompleted,
     loading,
     error,
     signup,
@@ -239,4 +287,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export default AuthContext;
-*/

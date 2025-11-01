@@ -4,8 +4,8 @@ import axios from 'axios';
 import './App.css';
 
 // Import AuthProvider
-//import { AuthProvider } from './contexts/AuthContext';
-import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
+import { AuthProvider } from './contexts/AuthContext';
+//import { MockAuthProvider } from './contexts/MockAuthContext'; // use for testing is complete
 
 // Import components
 import Navbar from './components/common/Navbar';
@@ -18,8 +18,11 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
 import NotificationSystem from './components/common/NotificationSystem';
-import ProfilePage from './pages/volunteer/ProfilePage';
+
+// Volunteer pages
+import ProfilePage from './pages/volunteer/ProfilePage'; 
 import VolunteerHistory from './pages/volunteer/VolunteerHistory';
+import EventRegistration from './pages/volunteer/EventRegistration'; 
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -61,7 +64,7 @@ function App() {
   }, [API_BASE_URL]);
 
   return (
-    <MockAuthProvider>
+    <AuthProvider>
       <NotificationProvider>
         <Router>
           <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -104,6 +107,14 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+                <Route 
+                  path="/volunteer/register-events" 
+                  element={
+                    <ProtectedRoute allowedRoles={['volunteer']}>
+                      <EventRegistration />
+                    </ProtectedRoute>
+                  } 
+                />
 
                 {/* Admin Routes - Protected */}
                 <Route 
@@ -142,7 +153,7 @@ function App() {
           </div>
         </Router>
       </NotificationProvider>
-    </MockAuthProvider>
+    </AuthProvider>
   );
 }
 
