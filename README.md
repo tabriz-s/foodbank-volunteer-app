@@ -114,6 +114,7 @@ A full HTML report is also generated at:
 /coverage/lcov-report/index.html
 ```
 You can open this file in any browser to explore line-by-line test coverage.
+You can also view our coverage report by opening the coverage-report.txt file in the root directory.
 
 ## Database Schema
 ![alt text](drawSQL-image-export-2025-09-26.png)
