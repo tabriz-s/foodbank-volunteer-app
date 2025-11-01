@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { fetchVolunteerHistory } from "../../services/VolunteerHistoryAPI";
+import { useAuth } from "../../contexts/AuthContext";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const VolunteerHistory = () => {
+    const { userRole } = useAuth();
+    const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [volunteerName, setVolunteerName] = useState("");
     const [volunteers, setVolunteers] = useState([]);
-    const [selectedVolunteer, setSelectedVolunteer] = useState(1); // default
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [selectedVolunteer, setSelectedVolunteer] = useState(1); // default, for simulation
+    const [isAdmin, setIsAdmin] = useState(userRole === "admin");
 
     // Simulate logged-in user (replace with real auth later)
     useEffect(() => {
@@ -33,7 +36,7 @@ const VolunteerHistory = () => {
 
         const fetchVolunteers = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/volunteers`);
+                const response = await fetch(`${API_BASE_URL}/volunteers/db`);
                 const data = await response.json();
                 if (data.success && Array.isArray(data.data)) {
                     const formatted = data.data.map((v) => ({
@@ -59,10 +62,23 @@ const VolunteerHistory = () => {
             .then((data) => {
                 if (data.success) {
                     setHistory(data.data);
-                    setVolunteerName(data.name);
+                    setVolunteerName(data.volunteerName);
+                    setError(null);
+                } else {
+                    // Fallback if API responds with success: false
+                    setHistory([]);
+                    setError(null);
                 }
             })
-            .catch((err) => setError(err.message))
+            .catch((err) => {
+                // Handle 404
+                if (err.message?.includes("No history found")) {
+                    setHistory([]);
+                    setError(null);
+                } else {
+                    setError(err.message || "Failed to load history");
+                }
+            })
             .finally(() => setLoading(false));
     }, [selectedVolunteer]);
 
@@ -83,7 +99,13 @@ const VolunteerHistory = () => {
                     {isAdmin && (
                         <select
                             value={selectedVolunteer}
-                            onChange={(e) => setSelectedVolunteer(e.target.value)}
+                            onChange={(e) => {
+                                const selectedId = e.target.value;
+                                setSelectedVolunteer(selectedId);
+
+                                const chosen = volunteers.find((v) => v.id.toString() === selectedId);
+                                setVolunteerName(chosen ? chosen.name : "");
+                            }}
                             className="mt-3 md:mt-0 border border-gray-300 rounded px-4 py-2 text-gray-700"
                         >
                             <option value="">Select Volunteer</option>
@@ -96,11 +118,11 @@ const VolunteerHistory = () => {
                     )}
                 </div>
 
-                {history.length === 0 ? (
-                    <p className="text-gray-600">No history found.</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full border border-gray-200 rounded-lg">
+                <div className="overflow-x-auto">
+                    {history.length === 0 ? (
+                        <p className="text-gray-600 mt-4">No history found.</p>
+                    ) : (
+                        <table className="w-full border border-gray-200 rounded-lg mb-16">
                             <thead className="bg-gray-100">
                             <tr>
                                 <th className="p-3 border text-left">Event</th>
@@ -117,32 +139,45 @@ const VolunteerHistory = () => {
                                     key={idx}
                                     className="hover:bg-gray-50 transition-colors duration-200"
                                 >
-                                    <td className="p-3 border">{row.name}</td>
-                                    <td className="p-3 border">{row.location}</td>
-                                    <td className="p-3 border">{row.date}</td>
-                                    <td className="p-3 border">
-                                        {Array.isArray(row.skills)
-                                            ? row.skills.join(", ")
-                                            : row.skills}
+                                    <td className="p-3 border relative group">
+                                        <span className="hover:text-blue-600">{row.Event}</span>
+                                        <div
+                                            className="absolute z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100
+                  bg-gray-100 text-gray-800 text-sm rounded-md px-3 py-2
+                  top-full left-1/2 -translate-x-1/2 mt-2 w-60 shadow-lg
+                  transition-opacity duration-300 ease-in-out"
+                                        >
+                                            {row.EventDescription || "No description available"}
+                                        </div>
                                     </td>
-                                    <td className="p-3 border">{row.urgency}</td>
+                                    <td className="p-3 border">{row.Location}</td>
+                                    <td className="p-3 border">
+                                        {new Date(row.EventDate).toLocaleDateString()}
+                                    </td>
+                                    <td className="p-3 border">
+                                        {Array.isArray(row.Skills)
+                                            ? row.Skills.join(", ")
+                                            : row.Skills || "Any"}
+                                    </td>
+                                    <td className="p-3 border">{row.Urgency}</td>
                                     <td
                                         className={`p-3 border font-semibold ${
-                                            row.status === "Completed"
+                                            row.Status === "Attended"
                                                 ? "text-green-600"
-                                                : row.status === "Pending"
+                                                : row.Status === "Registered"
                                                     ? "text-yellow-600"
                                                     : "text-red-600"
                                         }`}
                                     >
-                                        {row.status}
+                                        {row.Status}
                                     </td>
                                 </tr>
                             ))}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </div>
+
             </div>
         </div>
     );

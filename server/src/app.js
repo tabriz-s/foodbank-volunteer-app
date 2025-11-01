@@ -50,7 +50,7 @@ app.use('/api/skills', require('./routes/skills'));
 app.use('/api', require('./routes/history'));
 
 // Volunteer matching routes
-app.use('/api', require('./routes/matching'));
+app.use('/api/matching', require('./routes/matching'));
 
 // Notification routes
 app.use("/api", require("./routes/notification"));

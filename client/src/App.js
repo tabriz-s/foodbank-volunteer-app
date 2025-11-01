@@ -102,7 +102,7 @@ function App() {
                 <Route 
                   path="/volunteer/history" 
                   element={
-                    <ProtectedRoute allowedRoles={['volunteer']}>
+                    <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
                       <VolunteerHistory />
                     </ProtectedRoute>
                   } 
