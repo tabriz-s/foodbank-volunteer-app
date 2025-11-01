@@ -40,13 +40,13 @@ const VolunteerMatchingForm = () => {
 
         const fetchEvents = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/events`);
+                const res = await fetch(`${API_BASE_URL}/events/db`);
                 const data = await res.json();
 
                 if (data.success && Array.isArray(data.data)) {
                     const formatted = data.data.map((e) => ({
                         id: e.Event_id,
-                        name: e.name || "Unnamed Event", // Use correct field
+                        name: e.Event_name || "Unnamed Event", // Use correct field
                         description: e.description,
                         location: e.location,
                         urgency: e.urgency,
