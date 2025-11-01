@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { validateEventCreate, validateEventUpdate } = require('../middleware/EventValidation');
+
+// Mock data controllers
 const {
     getAllEvents,
     getEventById,
@@ -10,25 +12,37 @@ const {
     deleteEvent
 } = require('../controllers/EventController');
 
+// Database controllers
+const {
+    getAllEventsDB,
+    getEventByIdDB,
+    getEventsByStatusDB,
+    getEventsByUrgencyDB,
+    getUpcomingEventsDB,
+    createEventDB,
+    updateEventDB,
+    deleteEventDB
+} = require('../controllers/EventControllerDB');
 
-///api/events -get all events
+
+// Real Routes
+
+router.get('/db', getAllEventsDB);
+router.get('/db/status', getEventsByStatusDB);
+router.get('/db/urgency', getEventsByUrgencyDB);
+router.get('/db/upcoming', getUpcomingEventsDB);
+router.get('/db/:id', getEventByIdDB);
+router.post('/db', validateEventCreate, createEventDB);
+router.put('/db/:id', validateEventUpdate, updateEventDB);
+router.delete('/db/:id', deleteEventDB);
+
+
+// OLD MOCK ROUTES
 router.get('/', getAllEvents);
-
-//api/events/status -get events by status
 router.get('/status', getEventsByStatus);
-
-//api/events/:id - get event by ID
 router.get('/:id', getEventById);
-
-
-//api/events - Create new event 
 router.post('/', validateEventCreate, createEvent);
-
-
-//api/events/:id - Update event
 router.put('/:id', validateEventUpdate, updateEvent);
-
-//api/events/:id - Delete event
 router.delete('/:id', deleteEvent);
 
 module.exports = router;
