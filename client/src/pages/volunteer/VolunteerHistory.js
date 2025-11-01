@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const VolunteerHistory = () => {
     const { userRole } = useAuth();
+    const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
