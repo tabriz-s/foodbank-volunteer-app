@@ -979,7 +979,22 @@ const ProfilePage = () => {
                             View History
                         </a>
                     </div>
-
+                    {/* ----- Event Registration Section ----- */}
+                    <div className="mt-8 p-6 bg-white shadow rounded-lg">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                            Event Registration
+                        </h2>
+                        <p className="text-gray-600 mb-4">
+                            Browse and register for upcoming volunteer events that match your skills.
+                        </p>
+                        <a
+                            href="/volunteer/register-events"
+                            className="inline-block bg-blue-600 shadow-sm text-sm font-medium text-white px-5 py-2
+                                rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                            Browse Events
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
