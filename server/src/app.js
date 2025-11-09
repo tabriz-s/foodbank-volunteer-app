@@ -37,8 +37,11 @@ app.use('/api/events', require('./routes/events'));
 // Authentication routes
 app.use('/api/auth', require('./routes/auth'));
 
-// Volunteer routes
+// Volunteer(User) management routes
 app.use('/api/volunteers', require('./routes/volunteers'));
+
+// Volunteer event registration routes
+app.use('/api/event-registration', require('./routes/eventRegistration'));
 
 // Skill routes
 app.use('/api/skills', require('./routes/skills'));
@@ -47,7 +50,7 @@ app.use('/api/skills', require('./routes/skills'));
 app.use('/api', require('./routes/history'));
 
 // Volunteer matching routes
-app.use('/api', require('./routes/matching'));
+app.use('/api/matching', require('./routes/matching'));
 
 // Notification routes
 app.use("/api", require("./routes/notification"));

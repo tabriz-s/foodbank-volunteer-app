@@ -1,9 +1,11 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
-// Fetch admin dashboard statistics
+
+
+// Fetch admin dashboard statistics from database
 export const fetchDashboardStats = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+        const response = await fetch(`${API_BASE_URL}/admin/db/dashboard`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -15,6 +17,7 @@ export const fetchDashboardStats = async () => {
         if (!response.ok) {
             throw new Error(data.message || 'Failed to fetch dashboard stats');
         }
+        
         return data;
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -22,10 +25,10 @@ export const fetchDashboardStats = async () => {
     }
 };
 
-// Fetch recent activities
+// Fetch recent activities from database
 export const fetchRecentActivities = async () => {
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/activities`, {
+        const response = await fetch(`${API_BASE_URL}/admin/db/activities`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -37,6 +40,7 @@ export const fetchRecentActivities = async () => {
         if (!response.ok) {
             throw new Error(data.message || 'Failed to fetch recent activities');
         }
+        
         return data.data;
     } catch (error) {
         console.error('Error fetching recent activities:', error);

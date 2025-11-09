@@ -18,8 +18,11 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
 import NotificationSystem from './components/common/NotificationSystem';
-import ProfilePage from './pages/volunteer/ProfilePage';
+
+// Volunteer pages
+import ProfilePage from './pages/volunteer/ProfilePage'; 
 import VolunteerHistory from './pages/volunteer/VolunteerHistory';
+import EventRegistration from './pages/volunteer/EventRegistration'; 
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -100,10 +103,18 @@ function App() {
                 <Route
                   path="/volunteer/history"
                   element={
-                    <ProtectedRoute allowedRoles={['volunteer']}>
+                    <ProtectedRoute allowedRoles={['volunteer', 'admin']}>
                       <VolunteerHistory />
                     </ProtectedRoute>
                   }
+                />
+                <Route 
+                  path="/volunteer/register-events" 
+                  element={
+                    <ProtectedRoute allowedRoles={['volunteer']}>
+                      <EventRegistration />
+                    </ProtectedRoute>
+                  } 
                 />
 
                 {/* Admin Routes - Protected */}

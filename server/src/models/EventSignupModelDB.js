@@ -27,7 +27,7 @@ const getUpcomingEvents = async () => {
     }
 };
 
-// Get single event by ID - used by getEventWithSkills function
+// Get single event by ID - also used by getEventWithSkills function
 const getEventById = async (eventId) => {
     try {
         const connection = await getConnection();
@@ -424,7 +424,7 @@ const deleteSignup = async (signupId, volunteerId) => {
     try {
         const connection = await getConnection();
 
-        // Verify signup belongs to this volunteer
+        // Verify signup belongs to this volunteers request
         const [existing] = await connection.query(
             'SELECT * FROM event_signups WHERE Signup_id = ? AND Volunteer_id = ?',
             [signupId, volunteerId]
@@ -454,7 +454,7 @@ const deleteSignup = async (signupId, volunteerId) => {
 // FILTERED EVENT QUERIES FOR REGISTRATION PAGE
 // ============================================
 
-// Get available events for volunteer (Section 1)
+// Get available events for volunteer (Section 1 of event sign up page)
 const getAvailableEventsForVolunteer = async (volunteerId) => {
     try {
         const connection = await getConnection();
@@ -525,7 +525,7 @@ const getAvailableEventsForVolunteer = async (volunteerId) => {
     }
 };
 
-// Get other events (Section 2 - missing required skills)
+// Get other events (Section 2 of event signup page - user is missing required skills)
 const getOtherEventsForVolunteer = async (volunteerId) => {
     try {
         const connection = await getConnection();
@@ -579,10 +579,10 @@ const getOtherEventsForVolunteer = async (volunteerId) => {
     }
 };
 
-// ============================================
+// ========================================================
 
 module.exports = {
-    // Event queries (TODO: Move to EventModelDB)
+    // Event queries (TODO: Move to EventModelDB on final push)
     getUpcomingEvents,
     getEventById,
     getEventWithSkills,

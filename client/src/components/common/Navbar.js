@@ -42,6 +42,9 @@ const Navbar = () => {
                 <Link to="/volunteer/profile" className="text-gray-700 hover:text-blue-600 transition-colors">
                   My Profile
                 </Link>
+                <Link to="/volunteer/register-events" className="text-gray-700 hover:text-blue-600 transition-colors">
+                  Events
+                </Link>
                 <Link to="/volunteer/history" className="text-gray-700 hover:text-blue-600 transition-colors">
                   History
                 </Link>

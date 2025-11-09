@@ -5,137 +5,163 @@ const {
     deleteEventHistory,
 } = require("../../src/controllers/HistoryController");
 
-const mockModel = require("../../src/models/VolunteerHistoryModel");
-jest.mock("../../src/models/VolunteerHistoryModel");
+const { getConnection } = require("../../src/config/database");
 
-describe("HistoryController", () => {
-    let req, res;
+// mock DB connection
+jest.mock("../../src/config/database");
+
+describe("HistoryController (DB version)", () => {
+    let req, res, mockConn;
 
     beforeEach(() => {
+        mockConn = { query: jest.fn() };
+        getConnection.mockResolvedValue(mockConn);
         req = { params: {}, body: {}, user: { id: 1, role: "admin" } };
         res = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn(),
         };
+        jest.clearAllMocks();
     });
 
-    // ------------------------------------------------------------------
-    test("GET /volunteers/:id/history should return success and data", async () => {
-        mockModel.getVolunteerHistory.mockReturnValue([{ eventId: 101 }]);
-        req.params.id = 1;
+    // ----------------------------------------------------------
+    describe("getVolunteerHistoryById", () => {
+        test("should return 400 for invalid volunteer ID", async () => {
+            req.params.id = "abc";
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
 
-        await getVolunteerHistoryById(req, res);
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            success: true,
-            data: expect.any(Array),
-        }));
+        test("should return 403 if non-admin tries to access another volunteer", async () => {
+            req.user = { id: 5, role: "volunteer" };
+            req.params.id = 1;
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(403);
+        });
+
+        test("should return 404 if volunteer not found", async () => {
+            req.params.id = 1;
+            mockConn.query
+                .mockResolvedValueOnce([[]]); // no volunteer
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(404);
+        });
+
+        test("should return 404 if no history found", async () => {
+            req.params.id = 1;
+            mockConn.query
+                .mockResolvedValueOnce([[{ First_name: "Test", Last_name: "User" }]]) // volunteer found
+                .mockResolvedValueOnce([[]]); // no history
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(404);
+        });
+
+        test("should return 200 with history", async () => {
+            req.params.id = 1;
+            mockConn.query
+                .mockResolvedValueOnce([[{ First_name: "John", Last_name: "Doe" }]])
+                .mockResolvedValueOnce([[{ Event: "Food Drive" }]]);
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(
+                expect.objectContaining({ success: true, data: expect.any(Array) })
+            );
+        });
+
+        test("should handle DB error", async () => {
+            req.params.id = 1;
+            mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+            await getVolunteerHistoryById(req, res);
+            expect(res.status).toHaveBeenCalledWith(500);
+        });
     });
 
-    // invalid volunteer ID (NaN)
-    test("GET /volunteers/:id/history should handle invalid ID", async () => {
-        req.params.id = "abc";
-        await getVolunteerHistoryById(req, res);
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            success: false,
-        }));
+    // ----------------------------------------------------------
+    describe("assignVolunteerToEvent", () => {
+        test("should return 400 if data missing", async () => {
+            req.params.id = 1;
+            req.body = {};
+            await assignVolunteerToEvent(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+
+        test("should insert successfully", async () => {
+            req.params.id = 1;
+            req.body = {
+                event_id: 2,
+                participation_status: "Registered",
+                performance: "Good",
+            };
+            mockConn.query.mockResolvedValueOnce([{ insertId: 10 }]);
+            await assignVolunteerToEvent(req, res);
+            expect(mockConn.query).toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(201);
+        });
+
+        test("should handle DB error", async () => {
+            req.params.id = 1;
+            req.body = {
+                event_id: 2,
+                participation_status: "Registered",
+            };
+            mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+            await assignVolunteerToEvent(req, res);
+            expect(res.status).toHaveBeenCalledWith(500);
+        });
     });
 
-    // unauthorized volunteer (not admin, different ID)
-    test("GET /volunteers/:id/history should deny access for non-admins", async () => {
-        req.user = { id: 2, role: "volunteer" };
-        req.params.id = 1;
-        await getVolunteerHistoryById(req, res);
-        expect(res.status).toHaveBeenCalledWith(403);
+    // ----------------------------------------------------------
+    describe("updateEventHistory", () => {
+        test("should return 400 for invalid event ID", async () => {
+            req.params.eventId = "bad";
+            await updateEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
+
+        test("should update and return 200", async () => {
+            req.params.eventId = 5;
+            req.body = { participation_status: "Attended" };
+            mockConn.query.mockResolvedValueOnce([{ affectedRows: 2 }]);
+            await updateEventHistory(req, res);
+            expect(mockConn.query).toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        test("should handle DB error", async () => {
+            req.params.eventId = 5;
+            mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+            await updateEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(500);
+        });
     });
 
-    // no history found
-    test("GET /volunteers/:id/history should handle no history found", async () => {
-        mockModel.getVolunteerHistory.mockReturnValue([]);
-        req.params.id = 99;
-        await getVolunteerHistoryById(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
-    });
+    // ----------------------------------------------------------
+    describe("deleteEventHistory", () => {
+        test("should return 400 for invalid event ID", async () => {
+            req.params.eventId = "abc";
+            await deleteEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(400);
+        });
 
-    // ------------------------------------------------------------------
-    test("POST /volunteers/:id/history should add new record", async () => {
-        mockModel.addVolunteerHistory.mockReturnValue([{ eventId: 999 }]);
-        req.params.id = 1;
-        req.body = { id: 999, name: "Test Event", date: "2025-01-01" };
+        test("should return 404 if no rows deleted", async () => {
+            req.params.eventId = 3;
+            mockConn.query.mockResolvedValueOnce([{ affectedRows: 0 }]);
+            await deleteEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(404);
+        });
 
-        await assignVolunteerToEvent(req, res);
-        expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            success: true,
-        }));
-    });
+        test("should delete and return 200", async () => {
+            req.params.eventId = 3;
+            mockConn.query.mockResolvedValueOnce([{ affectedRows: 2 }]);
+            await deleteEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
 
-    // invalid volunteerId
-    test("POST /volunteers/:id/history should handle invalid volunteer ID", async () => {
-        req.params.id = "abc";
-        req.body = { id: 1, name: "Invalid Test", date: "2025-01-01" };
-        await assignVolunteerToEvent(req, res);
-        expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    // missing required fields
-    test("POST /volunteers/:id/history should handle missing event fields", async () => {
-        req.params.id = 1;
-        req.body = { name: "No ID" };
-        await assignVolunteerToEvent(req, res);
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            success: false,
-        }));
-    });
-
-    // ------------------------------------------------------------------
-    test("PUT /events/:eventId/history should update history", async () => {
-        mockModel.updateHistoryByEvent.mockReturnValue(2);
-        req.params.eventId = 101;
-        req.body = { name: "Updated Event" };
-
-        await updateEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(200);
-    });
-
-    // invalid eventId
-    test("PUT /events/:eventId/history should handle invalid eventId", async () => {
-        req.params.eventId = "xyz";
-        await updateEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    // no volunteer histories found
-    test("PUT /events/:eventId/history should handle no updated records", async () => {
-        mockModel.updateHistoryByEvent.mockReturnValue(0);
-        req.params.eventId = 999;
-        await updateEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
-    });
-
-    // ------------------------------------------------------------------
-    test("DELETE /events/:eventId/history should remove history", async () => {
-        mockModel.deleteHistoryByEvent.mockReturnValue(3);
-        req.params.eventId = 101;
-
-        await deleteEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(200);
-    });
-
-    // invalid eventId
-    test("DELETE /events/:eventId/history should handle invalid ID", async () => {
-        req.params.eventId = "abc";
-        await deleteEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    // no records found to delete
-    test("DELETE /events/:eventId/history should handle no entries found", async () => {
-        mockModel.deleteHistoryByEvent.mockReturnValue(0);
-        req.params.eventId = 123;
-        await deleteEventHistory(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
+        test("should handle DB error", async () => {
+            req.params.eventId = 3;
+            mockConn.query.mockRejectedValueOnce(new Error("DB error"));
+            await deleteEventHistory(req, res);
+            expect(res.status).toHaveBeenCalledWith(500);
+        });
     });
 });
