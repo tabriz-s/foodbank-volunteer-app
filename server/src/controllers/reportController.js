@@ -4,20 +4,20 @@ const path = require('path');
 const fs = require('fs').promises;
 const db = require('../config/database');
 
-// Environment flag to switch between mock and database
+// .env variable to switch between mock and database
 const USE_DATABASE = process.env.USE_DATABASE === 'true';
 
 // Mock data for testing
 const mockVolunteers = [
-  { id: 1, name: 'John Doe', email: 'john@example.com', eventsAttended: 5, totalHours: 20 },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com', eventsAttended: 8, totalHours: 32 },
-  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', eventsAttended: 3, totalHours: 12 }
+  { id: 1, name: 'John Doe', email: 'john@example.com', eventsAttended: 5, totalHours: 20, status: 'Active' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com', eventsAttended: 8, totalHours: 32, status: 'Active' },
+  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', eventsAttended: 3, totalHours: 12, status: 'Active' }
 ];
 
 const mockEvents = [
-  { id: 1, name: 'Food Distribution', date: '2024-01-15', volunteers: 12, status: 'completed' },
-  { id: 2, name: 'Warehouse Work', date: '2024-01-20', volunteers: 8, status: 'completed' },
-  { id: 3, name: 'Food Prep', date: '2024-01-25', volunteers: 15, status: 'active' }
+  { id: 1, name: 'Food Distribution', date: '2024-01-15', volunteersAssigned: 12, status: 'completed', urgency: 'High' },
+  { id: 2, name: 'Warehouse Work', date: '2024-01-20', volunteersAssigned: 8, status: 'completed', urgency: 'Medium' },
+  { id: 3, name: 'Food Prep', date: '2024-01-25', volunteersAssigned: 15, status: 'active', urgency: 'High' }
 ];
 
 /**
@@ -29,37 +29,42 @@ exports.generateVolunteerReport = async (req, res) => {
     const { format = 'pdf', startDate, endDate } = req.body;
     let volunteerData = [];
 
-    // ========== DATABASE MODE ==========
     if (USE_DATABASE && db) {
       try {
         // Query volunteer participation from database
-        const query = `
+        let query = `
           SELECT 
             v.Volunteer_id as id,
             CONCAT(v.First_name, ' ', v.Last_name) as name,
             u.Email as email,
-            COUNT(vh.Event_id) as eventsAttended,
-            SUM(TIMESTAMPDIFF(HOUR, e.Start_time, e.end_time)) as totalHours
+            COUNT(DISTINCT vh.Event_id) as eventsAttended,
+            COUNT(DISTINCT CASE WHEN vh.Participation_status = 'Attended' THEN vh.Event_id END) as eventsCompleted,
+            vh.Participation_status as status
           FROM volunteers v
           LEFT JOIN users_login u ON v.User_id = u.User_id
           LEFT JOIN volunteer_history vh ON v.Volunteer_id = vh.Volunteer_id
-          LEFT JOIN events e ON vh.Event_id = e.Event_id
-          WHERE vh.Participation_status = 'Attended'
-          ${startDate ? 'AND vh.Date_participated >= ?' : ''}
-          ${endDate ? 'AND vh.Date_participated <= ?' : ''}
-          GROUP BY v.Volunteer_id
-          ORDER BY eventsAttended DESC
+          WHERE 1=1
         `;
 
         const params = [];
-        if (startDate) params.push(startDate);
-        if (endDate) params.push(endDate);
+        
+        if (startDate) {
+          query += ` AND vh.Date_participated >= ?`;
+          params.push(startDate);
+        }
+        if (endDate) {
+          query += ` AND vh.Date_participated <= ?`;
+          params.push(endDate);
+        }
+
+        query += ` GROUP BY v.Volunteer_id, v.First_name, v.Last_name, u.Email ORDER BY eventsAttended DESC`;
 
         const [results] = await db.query(query, params);
-        volunteerData = results;
-
-        if (volunteerData.length === 0) {
-          // Fall back to mock data if no results
+        
+        if (results && results.length > 0) {
+          volunteerData = results;
+        } else {
+          console.log('No database results, using mock data');
           volunteerData = mockVolunteers;
         }
       } catch (dbError) {
@@ -67,7 +72,7 @@ exports.generateVolunteerReport = async (req, res) => {
         volunteerData = mockVolunteers;
       }
     } else {
-      // ========== MOCK MODE ==========
+      // mock mode
       volunteerData = mockVolunteers;
     }
 
@@ -76,7 +81,7 @@ exports.generateVolunteerReport = async (req, res) => {
       const filename = await generateVolunteerCSV(volunteerData);
       res.status(200).json({
         success: true,
-        message: 'Volunteer report generated',
+        message: 'Volunteer report generated successfully',
         format: 'csv',
         filename: filename,
         downloadUrl: `/api/reports/download/${filename}`,
@@ -86,7 +91,7 @@ exports.generateVolunteerReport = async (req, res) => {
       const filename = await generateVolunteerPDF(volunteerData);
       res.status(200).json({
         success: true,
-        message: 'Volunteer report generated',
+        message: 'Volunteer report generated successfully',
         format: 'pdf',
         filename: filename,
         downloadUrl: `/api/reports/download/${filename}`,
@@ -109,7 +114,6 @@ exports.generateVolunteerReport = async (req, res) => {
 };
 
 /**
- * Generate Event Assignment Report
  * @route POST /api/reports/events
  */
 exports.generateEventReport = async (req, res) => {
@@ -117,35 +121,48 @@ exports.generateEventReport = async (req, res) => {
     const { format = 'pdf', startDate, endDate } = req.body;
     let eventData = [];
 
-    // ========== DATABASE MODE ==========
+    // Database mode
     if (USE_DATABASE && db) {
       try {
-        const query = `
+        let query = `
           SELECT 
             e.Event_id as id,
             e.Event_name as name,
             e.Date as date,
-            COUNT(DISTINCT vh.Volunteer_id) as volunteers,
-            e.Status as status,
             e.Location as location,
-            e.Urgency as urgency
+            e.Urgency as urgency,
+            e.Status as status,
+            COUNT(DISTINCT va.Volunteer_id) as volunteersAssigned,
+            COUNT(DISTINCT CASE WHEN vh.Participation_status = 'Attended' THEN vh.Volunteer_id END) as volunteersAttended
           FROM events e
+          LEFT JOIN volunteer_assignments va ON e.Event_id = va.Event_id
           LEFT JOIN volunteer_history vh ON e.Event_id = vh.Event_id
           WHERE 1=1
-          ${startDate ? 'AND e.Date >= ?' : ''}
-          ${endDate ? 'AND e.Date <= ?' : ''}
-          GROUP BY e.Event_id
-          ORDER BY e.Date DESC
         `;
 
         const params = [];
-        if (startDate) params.push(startDate);
-        if (endDate) params.push(endDate);
+        
+        if (startDate) {
+          query += ` AND e.Date >= ?`;
+          params.push(startDate);
+        }
+        if (endDate) {
+          query += ` AND e.Date <= ?`;
+          params.push(endDate);
+        }
+
+        query += ` GROUP BY e.Event_id ORDER BY e.Date DESC`;
 
         const [results] = await db.query(query, params);
-        eventData = results;
-
-        if (eventData.length === 0) {
+        
+        if (results && results.length > 0) {
+          // Format dates for display
+          eventData = results.map(event => ({
+            ...event,
+            date: event.date ? new Date(event.date).toISOString().split('T')[0] : 'N/A'
+          }));
+        } else {
+          console.log('No database results, using mock data');
           eventData = mockEvents;
         }
       } catch (dbError) {
@@ -153,7 +170,7 @@ exports.generateEventReport = async (req, res) => {
         eventData = mockEvents;
       }
     } else {
-      // ========== MOCK MODE ==========
+      // Mock mode
       eventData = mockEvents;
     }
 
@@ -162,7 +179,7 @@ exports.generateEventReport = async (req, res) => {
       const filename = await generateEventCSV(eventData);
       res.status(200).json({
         success: true,
-        message: 'Event report generated',
+        message: 'Event report generated successfully',
         format: 'csv',
         filename: filename,
         downloadUrl: `/api/reports/download/${filename}`,
@@ -172,7 +189,7 @@ exports.generateEventReport = async (req, res) => {
       const filename = await generateEventPDF(eventData);
       res.status(200).json({
         success: true,
-        message: 'Event report generated',
+        message: 'Event report generated successfully',
         format: 'pdf',
         filename: filename,
         downloadUrl: `/api/reports/download/${filename}`,
@@ -223,17 +240,7 @@ exports.downloadReport = async (req, res) => {
     }
 
     // Send file
-    res.download(filePath, filename, (err) => {
-      if (err) {
-        console.error('Download error:', err);
-        if (!res.headersSent) {
-          res.status(500).json({
-            success: false,
-            error: 'Failed to download report'
-          });
-        }
-      }
-    });
+    res.download(filePath, filename);
 
   } catch (error) {
     console.error('Download report error:', error);
@@ -287,7 +294,7 @@ exports.listReports = async (req, res) => {
   }
 };
 
-// ========== HELPER FUNCTIONS ==========
+// HELPER FUNCTIONS
 
 /**
  * Generate Volunteer CSV Report
@@ -298,7 +305,6 @@ async function generateVolunteerCSV(data) {
   const reportsDir = path.join(__dirname, '../../reports');
   const filePath = path.join(reportsDir, filename);
 
-  // Create reports directory if it doesn't exist
   await fs.mkdir(reportsDir, { recursive: true });
 
   const csvWriter = createObjectCsvWriter({
@@ -308,7 +314,8 @@ async function generateVolunteerCSV(data) {
       { id: 'name', title: 'Name' },
       { id: 'email', title: 'Email' },
       { id: 'eventsAttended', title: 'Events Attended' },
-      { id: 'totalHours', title: 'Total Hours' }
+      { id: 'eventsCompleted', title: 'Events Completed' },
+      { id: 'status', title: 'Status' }
     ]
   });
 
@@ -325,7 +332,6 @@ async function generateVolunteerPDF(data) {
   const reportsDir = path.join(__dirname, '../../reports');
   const filePath = path.join(reportsDir, filename);
 
-  // Create reports directory if it doesn't exist
   await fs.mkdir(reportsDir, { recursive: true });
 
   return new Promise((resolve, reject) => {
@@ -335,42 +341,64 @@ async function generateVolunteerPDF(data) {
     doc.pipe(stream);
 
     // Header
-    doc.fontSize(20).text('Volunteer Participation Report', { align: 'center' });
-    doc.moveDown();
+    doc.fontSize(24).text('Volunteer Participation Report', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(`Food Bank Volunteer Management System`, { align: 'center' });
     doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.moveDown(2);
 
+    // Summary
+    doc.fontSize(12).text(`Total Volunteers: ${data.length}`, { underline: true });
+    doc.moveDown(1);
+
     // Table Header
-    const tableTop = 150;
-    doc.fontSize(12).font('Helvetica-Bold');
-    doc.text('ID', 50, tableTop);
-    doc.text('Name', 100, tableTop);
-    doc.text('Email', 250, tableTop);
-    doc.text('Events', 400, tableTop);
-    doc.text('Hours', 480, tableTop);
+    const tableTop = doc.y;
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('ID', 50, tableTop, { width: 40 });
+    doc.text('Name', 90, tableTop, { width: 150 });
+    doc.text('Email', 240, tableTop, { width: 150 });
+    doc.text('Events', 390, tableTop, { width: 60 });
+    doc.text('Status', 450, tableTop, { width: 100 });
+
+    // Horizontal line
+    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
 
     // Table Rows
-    doc.font('Helvetica').fontSize(10);
-    let y = tableTop + 20;
+    doc.font('Helvetica').fontSize(9);
+    let y = tableTop + 25;
     
-    data.forEach((volunteer, index) => {
+    data.forEach((volunteer) => {
       if (y > 700) {
         doc.addPage();
         y = 50;
+        
+        // Repeat header on new page
+        doc.fontSize(11).font('Helvetica-Bold');
+        doc.text('ID', 50, y, { width: 40 });
+        doc.text('Name', 90, y, { width: 150 });
+        doc.text('Email', 240, y, { width: 150 });
+        doc.text('Events', 390, y, { width: 60 });
+        doc.text('Status', 450, y, { width: 100 });
+        doc.font('Helvetica').fontSize(9);
+        y += 20;
       }
 
-      doc.text(volunteer.id, 50, y);
-      doc.text(volunteer.name.substring(0, 20), 100, y);
-      doc.text(volunteer.email.substring(0, 25), 250, y);
-      doc.text(volunteer.eventsAttended || 0, 400, y);
-      doc.text(volunteer.totalHours || 0, 480, y);
+      doc.text(volunteer.id || 'N/A', 50, y, { width: 40 });
+      doc.text((volunteer.name || 'N/A').substring(0, 25), 90, y, { width: 150 });
+      doc.text((volunteer.email || 'N/A').substring(0, 30), 240, y, { width: 150 });
+      doc.text(volunteer.eventsAttended || 0, 390, y, { width: 60 });
+      doc.text(volunteer.status || 'Active', 450, y, { width: 100 });
 
-      y += 25;
+      y += 20;
     });
 
     // Footer
-    doc.moveDown(3);
-    doc.fontSize(10).text(`Total Volunteers: ${data.length}`, { align: 'center' });
+    doc.fontSize(8).text(
+      `Report generated by Food Bank Volunteer Management System - ${new Date().toLocaleDateString()}`,
+      50,
+      doc.page.height - 50,
+      { align: 'center', width: doc.page.width - 100 }
+    );
 
     doc.end();
 
@@ -396,7 +424,10 @@ async function generateEventCSV(data) {
       { id: 'id', title: 'Event ID' },
       { id: 'name', title: 'Event Name' },
       { id: 'date', title: 'Date' },
-      { id: 'volunteers', title: 'Volunteers Assigned' },
+      { id: 'location', title: 'Location' },
+      { id: 'volunteersAssigned', title: 'Volunteers Assigned' },
+      { id: 'volunteersAttended', title: 'Volunteers Attended' },
+      { id: 'urgency', title: 'Urgency' },
       { id: 'status', title: 'Status' }
     ]
   });
@@ -417,48 +448,79 @@ async function generateEventPDF(data) {
   await fs.mkdir(reportsDir, { recursive: true });
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'LETTER', layout: 'landscape' });
     const stream = require('fs').createWriteStream(filePath);
 
     doc.pipe(stream);
 
     // Header
-    doc.fontSize(20).text('Event Assignment Report', { align: 'center' });
-    doc.moveDown();
+    doc.fontSize(24).text('Event Assignment Report', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).text(`Food Bank Volunteer Management System`, { align: 'center' });
     doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.moveDown(2);
 
+    // Summary
+    doc.fontSize(12).text(`Total Events: ${data.length}`, { underline: true });
+    doc.moveDown(1);
+
     // Table Header
-    const tableTop = 150;
-    doc.fontSize(12).font('Helvetica-Bold');
-    doc.text('ID', 50, tableTop);
-    doc.text('Event Name', 100, tableTop);
-    doc.text('Date', 300, tableTop);
-    doc.text('Volunteers', 400, tableTop);
-    doc.text('Status', 480, tableTop);
+    const tableTop = doc.y;
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('ID', 50, tableTop, { width: 30 });
+    doc.text('Event Name', 80, tableTop, { width: 150 });
+    doc.text('Date', 230, tableTop, { width: 80 });
+    doc.text('Location', 310, tableTop, { width: 120 });
+    doc.text('Assigned', 430, tableTop, { width: 60 });
+    doc.text('Attended', 490, tableTop, { width: 60 });
+    doc.text('Urgency', 550, tableTop, { width: 70 });
+    doc.text('Status', 620, tableTop, { width: 100 });
+
+    // Horizontal line
+    doc.moveTo(50, tableTop + 15).lineTo(720, tableTop + 15).stroke();
 
     // Table Rows
-    doc.font('Helvetica').fontSize(10);
-    let y = tableTop + 20;
+    doc.font('Helvetica').fontSize(8);
+    let y = tableTop + 25;
     
     data.forEach((event) => {
-      if (y > 700) {
+      if (y > 500) {
         doc.addPage();
         y = 50;
+        
+        // Repeat header
+        doc.fontSize(10).font('Helvetica-Bold');
+        doc.text('ID', 50, y, { width: 30 });
+        doc.text('Event Name', 80, y, { width: 150 });
+        doc.text('Date', 230, y, { width: 80 });
+        doc.text('Location', 310, y, { width: 120 });
+        doc.text('Assigned', 430, y, { width: 60 });
+        doc.text('Attended', 490, y, { width: 60 });
+        doc.text('Urgency', 550, y, { width: 70 });
+        doc.text('Status', 620, y, { width: 100 });
+        doc.font('Helvetica').fontSize(8);
+        y += 20;
       }
 
-      doc.text(event.id, 50, y);
-      doc.text(event.name.substring(0, 25), 100, y);
-      doc.text(event.date, 300, y);
-      doc.text(event.volunteers || 0, 400, y);
-      doc.text(event.status, 480, y);
+      doc.text(event.id || 'N/A', 50, y, { width: 30 });
+      doc.text((event.name || 'N/A').substring(0, 30), 80, y, { width: 150 });
+      doc.text(event.date || 'N/A', 230, y, { width: 80 });
+      doc.text((event.location || 'N/A').substring(0, 20), 310, y, { width: 120 });
+      doc.text(event.volunteersAssigned || 0, 430, y, { width: 60 });
+      doc.text(event.volunteersAttended || 0, 490, y, { width: 60 });
+      doc.text(event.urgency || 'N/A', 550, y, { width: 70 });
+      doc.text(event.status || 'N/A', 620, y, { width: 100 });
 
-      y += 25;
+      y += 18;
     });
 
     // Footer
-    doc.moveDown(3);
-    doc.fontSize(10).text(`Total Events: ${data.length}`, { align: 'center' });
+    doc.fontSize(8).text(
+      `Report generated by Food Bank Volunteer Management System - ${new Date().toLocaleDateString()}`,
+      50,
+      doc.page.height - 50,
+      { align: 'center', width: doc.page.width - 100 }
+    );
 
     doc.end();
 
