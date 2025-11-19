@@ -25,6 +25,7 @@ const DevNavigation = () => {
     { path: '/admin/events', name: 'Manage Events', category: 'Admin' },
     // { path: '/admin/volunteers', name: 'Manage Volunteers', category: 'Admin' },
     { path: '/admin/matching', name: 'Volunteer Matching', category: 'Admin' },
+    { path: '/admin/reports', name: 'Reports', category: 'Admin' },
     
     // Other pages
     { path: '/', name: 'Home', category: 'Public' },

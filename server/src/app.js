@@ -25,6 +25,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/api/reports/test', (req, res) => {
+  res.json({ message: 'Reports route is working!' });
+});
+
 // Test routes (no database required)
 //app.use('/api/test', require('./routes/test'));
 // API Routes
@@ -54,6 +58,9 @@ app.use('/api/matching', require('./routes/matching'));
 
 // Notification routes
 app.use("/api", require("./routes/notification"));
+
+// Report routes
+app.use('/api/reports', require('./routes/reports'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
