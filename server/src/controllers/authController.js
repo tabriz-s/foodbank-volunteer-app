@@ -175,7 +175,8 @@ exports.login = async (req, res) => {
             role: user.User_type,
             firebaseUid: user.Firebase_uid,
             profileCompleted,
-            profileData
+            profileData,
+            volunteerId: profileData ? profileData.Volunteer_id : null
           }
         });
 
