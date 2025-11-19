@@ -133,6 +133,7 @@ export const AuthProvider = ({ children }) => {
   
           const authToken = response.data.token || idToken; // Use backend token or Firebase token
           localStorage.setItem('authToken', authToken);
+          localStorage.setItem('volunteerId', userData.volunteerId.toString());
           localStorage.setItem('userId', userData.id.toString());
           localStorage.setItem('user', JSON.stringify({
             id: userData.id,

@@ -9,26 +9,28 @@ const VolunteerHistory = () => {
     const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [error, setError] = useState(null);
     const [volunteerName, setVolunteerName] = useState("");
     const [volunteers, setVolunteers] = useState([]);
-    const [selectedVolunteer, setSelectedVolunteer] = useState(1); // default, for simulation
+    const [selectedVolunteer, setSelectedVolunteer] = useState("");
     const [isAdmin, setIsAdmin] = useState(userRole === "admin");
 
-    // Simulate logged-in user (replace with real auth later)
+
     useEffect(() => {
-        const fetchUser = async () => {
-            const response = await fetch("http://localhost:5000/api/auth/me");
-            const data = await response.json();
-            if (data.success && data.user) {
-                setIsAdmin(data.user.role === "admin");
-                setSelectedVolunteer(
-                    data.user.role === "admin" ? "" : data.user.id
-                );
-            }
-        };
-        fetchUser();
-    }, []);
+        if (!currentUser || !userRole) return;
+
+        if (userRole === "volunteer") {
+            const vid = localStorage.getItem("volunteerId");
+            setSelectedVolunteer(vid);
+        }
+
+        if (userRole === "admin") {
+            setIsAdmin(true);
+        }
+    }, [currentUser, userRole]);
+
+
 
     // Fetch volunteer list (only if admin)
     useEffect(() => {
@@ -57,7 +59,7 @@ const VolunteerHistory = () => {
     useEffect(() => {
         if (!selectedVolunteer) return;
 
-        setLoading(true);
+        setHistoryLoading(true);
         fetchVolunteerHistory(selectedVolunteer)
             .then((data) => {
                 if (data.success) {
@@ -79,10 +81,10 @@ const VolunteerHistory = () => {
                     setError(err.message || "Failed to load history");
                 }
             })
-            .finally(() => setLoading(false));
+            .finally(() => setHistoryLoading(false));
     }, [selectedVolunteer]);
 
-    if (loading) return <div className="p-6 text-gray-600">Loading...</div>;
+    if (!currentUser || !userRole) return <div className="p-6 text-gray-600">Loading...</div>;
     if (error) return <div className="p-6 text-red-600">Error: {error}</div>;
 
     return (
