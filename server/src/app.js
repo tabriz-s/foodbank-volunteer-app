@@ -25,6 +25,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/api/reports/test', (req, res) => {
+  res.json({ message: 'Reports route is working!' });
+});
+
 // Test routes (no database required)
 //app.use('/api/test', require('./routes/test'));
 // API Routes

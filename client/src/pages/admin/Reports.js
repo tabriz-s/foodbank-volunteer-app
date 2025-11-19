@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DocumentArrowDownIcon, TableCellsIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Reports = () => {
+  const { getIdToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState('volunteers');
   const [format, setFormat] = useState('pdf');
@@ -13,13 +15,9 @@ const Reports = () => {
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   // Fetch existing reports on load
-  useEffect(() => {
-    fetchReportsList();
-  }, []);
-
-  const fetchReportsList = async () => {
+    const fetchReportsList = useCallback(async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = await getIdToken();
       const response = await axios.get(`${API_BASE_URL}/reports/list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -30,12 +28,16 @@ const Reports = () => {
     } catch (error) {
       console.error('Error fetching reports list:', error);
     }
-  };
+  }, [getIdToken, API_BASE_URL]); // Add dependencies
+
+  useEffect(() => {
+    fetchReportsList();
+  }, [fetchReportsList]); // Now include it
 
   const generateReport = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
+      const token = await getIdToken();
       const endpoint = reportType === 'volunteers' 
         ? `${API_BASE_URL}/reports/volunteers`
         : `${API_BASE_URL}/reports/events`;

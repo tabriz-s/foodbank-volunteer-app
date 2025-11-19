@@ -130,7 +130,19 @@ export const AuthProvider = ({ children }) => {
           setProfileCompleted(userData.profileCompleted || false);
           setUserProfile(userData.profileData);
           
-          console.log('Login successful:', userData);
+  
+          const authToken = response.data.token || idToken; // Use backend token or Firebase token
+          localStorage.setItem('authToken', authToken);
+          localStorage.setItem('userId', userData.id.toString());
+          localStorage.setItem('user', JSON.stringify({
+            id: userData.id,
+            email: userData.email,
+            role: userData.role,
+            firebaseUid: userData.firebaseUid
+          }));
+          
+          console.log('Saved to localStorage:', userData.id);
+          console.log('Saved authToken:', authToken);
         }
       } catch (backendError) {
         console.error('Backend login error:', backendError);
@@ -148,6 +160,11 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await signOut(auth);
+
+      localStorage.removeItem('userId');
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      
       setUserRole(null);
       setUserProfile(null);
       setUserId(null);

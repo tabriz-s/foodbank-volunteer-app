@@ -84,7 +84,7 @@ exports.generateVolunteerReport = async (req, res) => {
         message: 'Volunteer report generated successfully',
         format: 'csv',
         filename: filename,
-        downloadUrl: `/api/reports/download/${filename}`,
+        downloadUrl: `/reports/download/${filename}`,
         recordCount: volunteerData.length
       });
     } else if (format === 'pdf') {
@@ -94,7 +94,7 @@ exports.generateVolunteerReport = async (req, res) => {
         message: 'Volunteer report generated successfully',
         format: 'pdf',
         filename: filename,
-        downloadUrl: `/api/reports/download/${filename}`,
+        downloadUrl: `/reports/download/${filename}`,
         recordCount: volunteerData.length
       });
     } else {
@@ -182,7 +182,7 @@ exports.generateEventReport = async (req, res) => {
         message: 'Event report generated successfully',
         format: 'csv',
         filename: filename,
-        downloadUrl: `/api/reports/download/${filename}`,
+        downloadUrl: `/reports/download/${filename}`,
         recordCount: eventData.length
       });
     } else if (format === 'pdf') {
@@ -192,7 +192,7 @@ exports.generateEventReport = async (req, res) => {
         message: 'Event report generated successfully',
         format: 'pdf',
         filename: filename,
-        downloadUrl: `/api/reports/download/${filename}`,
+        downloadUrl: `/reports/download/${filename}`,
         recordCount: eventData.length
       });
     } else {
@@ -213,7 +213,7 @@ exports.generateEventReport = async (req, res) => {
 
 /**
  * Download Generated Report
- * @route GET /api/reports/download/:filename
+ * @route GET /reports/download/:filename
  */
 exports.downloadReport = async (req, res) => {
   try {
