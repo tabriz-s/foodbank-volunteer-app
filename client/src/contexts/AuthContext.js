@@ -24,6 +24,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userId, setUserId] = useState(null); // MySQL User_id
+  const [volunteerId, setVolunteerId] = useState(null); // MySQL Volunteer_id - Added
   const [userRole, setUserRole] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [profileCompleted, setProfileCompleted] = useState(false);
@@ -45,6 +46,20 @@ export const AuthProvider = ({ children }) => {
       return null;
     } catch (error) {
       console.error('Error fetching user role:', error);
+      return null;
+    }
+  };
+
+  // NEW FUNCTION: Fetch volunteer ID from backend
+  const fetchVolunteerId = async (mysqlUserId) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/volunteers/by-user/${mysqlUserId}`);
+      if (response.data.success && response.data.volunteer) {
+        return response.data.volunteer.Volunteer_id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching volunteer ID:', error);
       return null;
     }
   };
@@ -83,7 +98,14 @@ export const AuthProvider = ({ children }) => {
         if (response.data.success) {
           console.log('User synced to database:', response.data.user);
           setUserId(response.data.user.id); // Store MySQL User_id
+
+          // If role is volunteer, fetch volunteer_id - Added
+          if (role === 'volunteer') {
+            const volId = await fetchVolunteerId(response.data.user.id);
+            setVolunteerId(volId);
+          }
         }
+        
       } catch (backendError) {
         console.error('Backend registration error:', backendError);
         // If backend fails, delete Firebase user to maintain consistency
@@ -129,7 +151,14 @@ export const AuthProvider = ({ children }) => {
           setUserRole(userData.role);
           setProfileCompleted(userData.profileCompleted || false);
           setUserProfile(userData.profileData);
-          
+
+          // If user is a volunteer, fetch their Volunteer_id - ADDED
+          let volId = null;
+          if (userData.role === 'volunteer') {
+            const volId = await fetchVolunteerId(userData.id);
+            setVolunteerId(volId);
+            localStorage.setItem('volunteerId', volId?.toString() || '');
+          }
   
           const authToken = response.data.token || idToken; // Use backend token or Firebase token
           localStorage.setItem('authToken', authToken);
@@ -139,10 +168,12 @@ export const AuthProvider = ({ children }) => {
             id: userData.id,
             email: userData.email,
             role: userData.role,
-            firebaseUid: userData.firebaseUid
+            firebaseUid: userData.firebaseUid,
+            volunteerId: volId || null // Store volunteer_id in user object - Added
           }));
           
           console.log('Saved to localStorage:', userData.id);
+          console.log('Saved to localStorage - Volunteer ID:', volId); // Added
           console.log('Saved authToken:', authToken);
         }
       } catch (backendError) {
@@ -163,12 +194,14 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
 
       localStorage.removeItem('userId');
+      localStorage.removeItem('volunteerId'); // added
       localStorage.removeItem('user');
       localStorage.removeItem('authToken');
       
       setUserRole(null);
       setUserProfile(null);
       setUserId(null);
+      setVolunteerId(null); // added
       setProfileCompleted(false);
       
       // Clear backend session
@@ -262,6 +295,13 @@ export const AuthProvider = ({ children }) => {
             setUserRole(userData.role);
             setProfileCompleted(userData.profileCompleted || false);
             setUserProfile(userData.profileData);
+
+            // Fetch volunteer_id if user is a volunteer - added
+            if (userData.role === 'volunteer') {
+              const volId = await fetchVolunteerId(userData.id);
+              setVolunteerId(volId);
+            }
+
           }
         } catch (error) {
           console.error('Error fetching user data on auth state change:', error);
@@ -282,6 +322,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     userId, // MySQL User_id
+    volunteerId, // MySQL Volunteer_id - added
     userRole,
     userProfile,
     profileCompleted,
