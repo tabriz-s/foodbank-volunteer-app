@@ -13,7 +13,9 @@ import {
 } from '../../services/EventRegistrationAPI';
 
 const EventRegistration = () => {
-    const { userId } = useAuth();
+
+    //const { userId } = useAuth();
+    const { volunteerId } = useAuth();
     const [activeTab, setActiveTab] = useState('browse'); // 'browse' or 'registered'
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -36,9 +38,9 @@ const EventRegistration = () => {
             setError(null);
 
             const [availableRes, otherRes, myRes] = await Promise.all([
-                fetchAvailableEvents(userId),
-                fetchOtherEvents(userId),
-                fetchMyEvents(userId)
+                fetchAvailableEvents(volunteerId),
+                fetchOtherEvents(volunteerId),
+                fetchMyEvents(volunteerId)
             ]);
 
             setAvailableEvents(availableRes.data || []);
@@ -53,10 +55,10 @@ const EventRegistration = () => {
     };
 
     useEffect(() => {
-        if (userId) {
+        if (volunteerId) {
             loadEventsData();
         }
-    }, [userId]);
+    }, [volunteerId]);
 
     // Handle registration
     const handleRegisterClick = (event) => {
@@ -79,7 +81,7 @@ const EventRegistration = () => {
                 ? selectedSkill 
                 : null;
             
-            await registerForEvent(userId, selectedEvent.Event_id, skillToRegister);
+            await registerForEvent(volunteerId, selectedEvent.Event_id, skillToRegister);
             
             // Reload events data
             await loadEventsData();
@@ -105,7 +107,7 @@ const EventRegistration = () => {
         }
 
         try {
-            await unregisterFromEvent(signupId, userId);
+            await unregisterFromEvent(signupId, volunteerId);
             
             // Reload events data
             await loadEventsData();

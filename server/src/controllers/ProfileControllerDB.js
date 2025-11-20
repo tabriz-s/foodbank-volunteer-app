@@ -94,6 +94,44 @@ const getVolunteerByIdDB = async (req, res) => {
     }
 };
 
+//ADDING
+// GET volunteer by user_id (for AuthContext to fetch volunteer_id)
+const getVolunteerByUserIdDB = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        
+        if (!user_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'user_id is required'
+            });
+        }
+        
+        const volunteer = await VolunteerDB.getVolunteerWithUser_id(user_id);
+        
+        if (!volunteer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Volunteer profile not found for this user'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            source: 'Azure MySQL Database',
+            volunteer: volunteer
+        });
+    } catch (error) {
+        console.error('Error in getVolunteerByUserIdDB:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve volunteer profile',
+            error: error.message
+        });
+    }
+};
+
+
 // POST - Create new volunteer profile
 const createProfileDB = async (req, res) => {
     try {
@@ -246,6 +284,7 @@ module.exports = {
     getAllVolunteersDB,
     getProfileDB,
     getVolunteerByIdDB,
+    getVolunteerByUserIdDB,  // ADDING THIS LINE
     createProfileDB,
     updateProfileDB
 };

@@ -16,6 +16,7 @@ const {
   getAllVolunteersDB,
   getProfileDB,
   getVolunteerByIdDB,
+  getVolunteerByUserIdDB,  // ADD THIS
   createProfileDB,
   updateProfileDB
 } = require('../controllers/ProfileControllerDB');
@@ -57,6 +58,10 @@ router.get('/db/:id', getVolunteerByIdDB);
 
 // GET /api/volunteers/db/:id/skills - Get volunteer skills with details from database
 router.get('/db/:id/skills', getVolunteerSkillsDB);
+
+// ADDING
+// GET /api/volunteers/by-user/:user_id - Get volunteer by user_id (for auth context)
+router.get('/by-user/:user_id', getVolunteerByUserIdDB);
 
 // POST /api/volunteers/db/profile - Create new profile in database
 router.post('/db/profile', validateProfile, createProfileDB);
