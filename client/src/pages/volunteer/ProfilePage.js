@@ -1,13 +1,21 @@
 import React, { useState, useEffect} from 'react';
 import { fetchProfile, createProfile, updateProfile, fetchSkills } from '../../services/ProfileAPI';
 import { useAuth } from '../../contexts/AuthContext';
+import { 
+    fetchVolunteerNotifications, 
+    fetchUnreadCount,
+    volunteerMarkNotifAsRead,
+    formatNotificationDate,
+    getNotificationIcon,
+    getNotificationColor
+} from '../../services/NotificationAPI';
 
 const ProfilePage = () => {
 
     // mock user data - using user with ID 1. 
     // final app should use authentication content
     //const CURRENT_USER_ID = 1; // change to 3+ to test "new user" change in Profile controller to change user
-    const { userId } = useAuth(); // Get real user ID from context
+    const { userId, volunteerId } = useAuth(); // Get real user ID from context
 
     const [profileData, setProfileData] = useState({
         full_name: '',
@@ -31,6 +39,9 @@ const ProfilePage = () => {
     const [profileExists, setProfileExists] = useState(false); // check if the user is new or already in the database
     const [isEditMode, setIsEditMode] = useState(false); // check if the user editing or viewing page
     const [originalProfileData, setOriginalProfileData] = useState(null); // store original profile data for when the user hits the cancel button (revert to this state when clicked)
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
 
     
     
@@ -108,6 +119,11 @@ const ProfilePage = () => {
                     setProfileExists(false);
                     setIsEditMode(true); // user does not exists so they must add in their info
                 }
+
+                // load notifications
+                if (volunteerId) {
+                    await loadNotifications();
+                }
             } catch (error) {
                 console.error("Error loading dataset:", error);
                 setErrors({ submit: "Failed to load data. Refresh the page."});
@@ -119,8 +135,31 @@ const ProfilePage = () => {
 
         loadData();
 
-    }, [userId]);
+    }, [userId, volunteerId]);
     
+    // Load notifications for volunteer
+    const loadNotifications = async () => {
+        if (!volunteerId) return;
+        
+        try {
+            setNotificationsLoading(true);
+            const response = await fetchVolunteerNotifications(volunteerId);
+            if (response.success) {
+                setNotifications(response.data || []);
+            }
+            
+            // Also fetch unread count
+            const countResponse = await fetchUnreadCount(volunteerId);
+            if (countResponse.success) {
+                setUnreadCount(countResponse.unreadCount || 0);
+            }
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        } finally {
+            setNotificationsLoading(false);
+        }
+    }
+
     // handle text inputs
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -204,6 +243,26 @@ const ProfilePage = () => {
                     : skill // Keep other skills unchanged
             )
         }));
+    };
+
+    // Handle marking notification as read
+    const handleMarkAsRead = async (notificationDeliveryId) => {
+        try {
+            const response = await volunteerMarkNotifAsRead(notificationDeliveryId);
+            if (response.success) {
+                // Update local state
+                setNotifications(prev => 
+                    prev.map(notif => 
+                        notif.Notification_delivery_id === notificationDeliveryId
+                            ? { ...notif, Is_read: 1, Read_at: new Date().toISOString() }
+                            : notif
+                    )
+                );
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
     };
 
 
@@ -381,22 +440,11 @@ const ProfilePage = () => {
 
     // define the webpages side navbar
     const sidebarItems = [
-        {
-            id: 'personal-info',
-            label: 'Personal Info',
-        },
-        {
-            id: 'skills',
-            label: 'Skills'
-        },
-        {
-            id: 'email-password',
-            label: 'Email & Password'
-        },
-        {
-            id: 'availability',
-            label: 'Availability'
-        }
+        { id: 'personal-info', label: 'Personal Info' },
+        { id: 'skills', label: 'Skills' },
+        { id: 'email-password', label: 'Email & Password' },
+        { id: 'availability', label: 'Availability' },
+        { id: 'notifications', label: 'Notifications' } 
     ]; 
 
     // render volunteers personal info when this section of the navbar is selected
@@ -821,6 +869,126 @@ const ProfilePage = () => {
         );
     };
 
+    // Render the volunteers notifications
+    const renderNotifications = () => {
+        return (
+            <div className="space-y-6">
+                {/* Notifications Header */}
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-medium text-gray-900">Your Notifications</h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                            Stay updated on event assignments, opportunities, and changes
+                        </p>
+                    </div>
+                    {unreadCount > 0 && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            {unreadCount} unread
+                        </span>
+                    )}
+                </div>
+
+                {/* Loading State */}
+                {notificationsLoading ? (
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading notifications...</p>
+                    </div>
+                ) : notifications.length === 0 ? (
+                    /* Empty State */
+                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
+                        <p className="mt-1 text-sm text-gray-500">You're all caught up! Check back later for updates.</p>
+                    </div>
+                ) : (
+                    /* Notifications List */
+                    <div className="space-y-3">
+                        {notifications.map((notification) => (
+                            <div
+                                key={notification.Notification_delivery_id}
+                                className={`relative p-4 rounded-lg border-2 transition-all ${
+                                    notification.Is_read 
+                                        ? 'bg-white border-gray-200 opacity-75' 
+                                        : getNotificationColor(notification.Notification_type)
+                                }`}
+                            >
+                                {/* Unread Indicator */}
+                                {!notification.Is_read && (
+                                    <div className="absolute top-4 right-4">
+                                        <span className="flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Notification Content */}
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0 text-2xl mr-3">
+                                        {getNotificationIcon(notification.Notification_type)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {/* Subject */}
+                                        <p className={`text-sm font-semibold ${
+                                            notification.Is_read ? 'text-gray-700' : 'text-gray-900'
+                                        }`}>
+                                            {notification.Subject}
+                                        </p>
+                                        
+                                        {/* Message */}
+                                        <p className={`mt-1 text-sm ${
+                                            notification.Is_read ? 'text-gray-500' : 'text-gray-700'
+                                        }`}>
+                                            {notification.Message}
+                                        </p>
+
+                                        {/* Event Details (if available) */}
+                                        {notification.Event_name && (
+                                            <div className="mt-2 flex items-center text-xs text-gray-500">
+                                                <span className="font-medium">{notification.Event_name}</span>
+                                                {notification.Event_date && (
+                                                    <span className="ml-2">
+                                                        • {new Date(notification.Event_date).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Metadata */}
+                                        <div className="mt-2 flex items-center justify-between">
+                                            <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                                <span>{formatNotificationDate(notification.Delivered_at)}</span>
+                                                <span>•</span>
+                                                <span className="capitalize">{notification.Notification_type}</span>
+                                            </div>
+
+                                            {/* Mark as Read Button */}
+                                            {!notification.Is_read && (
+                                                <button
+                                                    onClick={() => handleMarkAsRead(notification.Notification_delivery_id)}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 focus:outline-none"
+                                                >
+                                                    Mark as read
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // loading check
     if (!userId) {
         return (
@@ -845,6 +1013,8 @@ const ProfilePage = () => {
                 return renderEmailPassword();
             case 'availability':
                 return renderAvailability();
+            case 'notifications':
+                return renderNotifications();
             default:
                 return renderPersonalInfo();
         }
