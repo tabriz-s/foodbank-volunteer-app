@@ -28,6 +28,7 @@ const Register = () => {
     }
   };
 
+  // Email validation
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email.trim()) {
@@ -51,6 +52,7 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
