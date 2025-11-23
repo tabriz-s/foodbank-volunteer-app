@@ -37,6 +37,7 @@ app.use('/api/test', require('./routes/test'));
 app.use('/api/skills', require('./routes/skills'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/events', require('./routes/events'));
+app.use('/api/stats', require('./routes/stats'));
 
 // Authentication routes
 app.use('/api/auth', require('./routes/auth'));
