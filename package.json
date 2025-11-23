@@ -20,6 +20,7 @@
   "author": "Software Design Group 10",
   "license": "ISC",
   "dependencies": {
+    "@react-google-maps/api": "^2.20.7",
     "concurrently": "^9.2.1",
     "firebase": "^12.4.0",
     "lucide-react": "^0.544.0"

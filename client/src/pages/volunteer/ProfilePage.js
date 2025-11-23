@@ -1,6 +1,7 @@
 import React, { useState, useEffect} from 'react';
 import { fetchProfile, createProfile, updateProfile, fetchSkills } from '../../services/ProfileAPI';
 import { useAuth } from '../../contexts/AuthContext';
+import { User, Settings, Award, Calendar, History, CalendarDays } from 'lucide-react';
 
 const ProfilePage = () => {
 
@@ -384,18 +385,22 @@ const ProfilePage = () => {
         {
             id: 'personal-info',
             label: 'Personal Info',
+            icon: User
         },
         {
             id: 'skills',
-            label: 'Skills'
+            label: 'Skills',
+            icon: Award
         },
         {
             id: 'email-password',
-            label: 'Email & Password'
+            label: 'Email & Password',
+            icon: Settings
         },
         {
             id: 'availability',
-            label: 'Availability'
+            label: 'Availability',
+            icon: Calendar
         }
     ]; 
 
@@ -428,7 +433,7 @@ const ProfilePage = () => {
 
                 {/* ----Name Section---- */}
                 <div>
-                    <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Full Name <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -440,21 +445,21 @@ const ProfilePage = () => {
                         maxLength="50"
                         placeholder="Enter First and Last Name"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } ${errors.full_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                     />
                     {errors.full_name && (
-                        <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.full_name}</p>
                     )}
                     {!isReadOnly && (
-                        <p className="mt-1 text-xs text-gray-500">{profileData.full_name.length}/50 characters</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{profileData.full_name.length}/50 characters</p>
                     )}
                 </div>
 
                 {/* ----Phone Number Section---- */}
                 <div>
-                    <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -465,12 +470,12 @@ const ProfilePage = () => {
                         onChange={handleInputChange}
                         placeholder="(123) 456-7890"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } ${errors.phone_number ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } ${errors.phone_number ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                     />
                     {errors.phone_number && (
-                        <p className="mt-1 text-sm text-red-600">{errors.phone_number}</p>
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.phone_number}</p>
                     )}
                 </div>
                 
@@ -478,7 +483,7 @@ const ProfilePage = () => {
 
                 {/* Address Line 1 */}
                 <div>
-                    <label htmlFor="address_1" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="address_1" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Address Line 1 <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -490,21 +495,21 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="Street address"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } ${errors.address_1 ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } ${errors.address_1 ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                     />
                     {errors.address_1 && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address_1}</p>
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address_1}</p>
                     )}
                     {!isReadOnly && (
-                        <p className="mt-1 text-xs text-gray-500">{profileData.address_1.length}/100 characters</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{profileData.address_1.length}/100 characters</p>
                     )}
                 </div>
 
                 {/* Address Line 2 */}
                 <div>
-                    <label htmlFor="address_2" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="address_2" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Address Line 2
                     </label>
                     <input 
@@ -516,21 +521,21 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="Apartment, suite, etc. (optional)"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } ${errors.address_2 ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } ${errors.address_2 ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                     />
                     {errors.address_2 && (
-                        <p className="mt-1 text-sm text-red-600">{errors.address_2}</p>
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.address_2}</p>
                     )}
                     {!isReadOnly && (
-                        <p className="mt-1 text-xs text-gray-500">{profileData.address_2.length}/100 characters</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{profileData.address_2.length}/100 characters</p>
                     )}
                 </div>
                 
                 {/* City */}
                 <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         City <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -542,15 +547,15 @@ const ProfilePage = () => {
                         maxLength="100"
                         placeholder="City"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } ${errors.city ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                     />
                     {errors.city && (
-                        <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.city}</p>
                     )}
                     {!isReadOnly && (
-                        <p className="mt-1 text-xs text-gray-500">{profileData.city.length}/100 characters</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{profileData.city.length}/100 characters</p>
                     )}
                 </div>
 
@@ -558,7 +563,7 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* State */}
                     <div>
-                         <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                         <label htmlFor="state" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             State <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -567,9 +572,9 @@ const ProfilePage = () => {
                             value={profileData.state}
                             onChange={handleInputChange}
                             disabled={isReadOnly}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                            } ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                                isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                            } ${errors.state ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                         >
                             <option value="">Select State</option>
                             {states.map(state => (
@@ -577,13 +582,13 @@ const ProfilePage = () => {
                             ))}
                         </select>
                         {errors.state && (
-                            <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.state}</p>
                         )}
                     </div>
 
                     {/* Zip Code */}
                     <div>
-                        <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="zip_code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Zip Code <span className="text-red-500">*</span>
                         </label>
                         <input 
@@ -595,19 +600,19 @@ const ProfilePage = () => {
                             maxLength="9"
                             placeholder="12345 or 12345-6789"
                             disabled={isReadOnly}
-                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                            } ${errors.zip_code ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                                isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                            } ${errors.zip_code ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                         />
                         {errors.zip_code && (
-                            <p className="mt-1 text-sm text-red-600">{errors.zip_code}</p>
+                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.zip_code}</p>
                         )}
                     </div>
                 </div>
 
                 {/* Preferences */}
                 <div>
-                    <label htmlFor="preferences" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="preferences" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Preferences (Optional)
                         </label>
                         <textarea
@@ -618,9 +623,9 @@ const ProfilePage = () => {
                         rows="3"
                         placeholder="Any preferences for volunteering (e.g., preferred time slots, special accommodations needed, etc.)"
                         disabled={isReadOnly}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''
-                        } border-gray-300`}
+                        className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
+                            isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
+                        } border-gray-300 dark:border-gray-600`}
                     />
                 </div>
             </div>
@@ -640,13 +645,13 @@ const ProfilePage = () => {
         return (
             <div className="space-y-6">
                 <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                         {isReadOnly ? 'Your Skills' : 'Select Your Skills'}
                     </h3>
-                    <div className="border rounded-md p-4 max-h-96 overflow-y-auto bg-gray-50">
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-xl p-4 max-h-96 overflow-y-auto bg-gray-50 dark:bg-gray-700/50">
                         {Object.entries(skillsByCategory).map(([category, skills]) => (
                             <div key={category} className="mb-6">
-                                <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide text-blue-600">
+                                <h4 className="font-medium text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wide text-primary-600 dark:text-primary-400">
                                     {category.replace('_', ' ')}
                                 </h4>
                                 <div className="space-y-4">
@@ -657,36 +662,36 @@ const ProfilePage = () => {
                                         return (
                                             <div key={skill.Skills_id} className="space-y-2">
                                                 {/* Checkbox Section of skills*/}
-                                                <label>
+                                                <label className="flex items-center">
                                                     <input
                                                         type="checkbox"
                                                         checked={selected}
                                                         onChange={() => handleSkillToggle(skill.Skills_id)}
                                                         disabled={isReadOnly}
-                                                        className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                                        className={`h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-500 rounded ${
                                                             isReadOnly ? 'cursor-not-allowed opacity-60' : ''
                                                         }`}
                                                     />
-                                                    <span className="ml-3 text-sm font-medium text-gray-700">
+                                                    <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
                                                         {skill.Description}
                                                     </span>
                                                 </label>
                                                 
                                                 {/* Show experience and date inputs when skill is selected */}
                                                 {selected && (
-                                                    <div className="ml-7 space-y-2 p-3 bg-white rounded border border-gray-200">
+                                                    <div className="ml-7 space-y-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                             {/* Experience Level Dropdown */}
                                                             <div>
-                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                                                                     Experience Level <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <select
                                                                     value={skillDetails?.Experience_level || 'beginner'}
                                                                     onChange={(e) => handleSkillExperienceChange(skill.Skills_id, e.target.value)}
                                                                     disabled={isReadOnly}
-                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 dark:bg-gray-600 cursor-not-allowed' : ''
                                                                     }`}
                                                                 >
                                                                     <option value="beginner">Beginner</option>
@@ -697,7 +702,7 @@ const ProfilePage = () => {
                                                             
                                                             {/* Date Acquired Picker */}
                                                             <div>
-                                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                                                                     Date Acquired <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <input
@@ -705,8 +710,8 @@ const ProfilePage = () => {
                                                                     value={skillDetails?.Date_acquired || ''}
                                                                     onChange={(e) => handleSkillDateChange(skill.Skills_id, e.target.value)}
                                                                     disabled={isReadOnly}
-                                                                    className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                                                        isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'
+                                                                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                                                        isReadOnly ? 'bg-gray-50 dark:bg-gray-600 cursor-not-allowed' : ''
                                                                     }`}
                                                                 />
                                                             </div>
@@ -721,9 +726,9 @@ const ProfilePage = () => {
                         ))}
                     </div>
                     {errors.skills && (
-                        <p className="mt-2 text-sm text-red-600">{errors.skills}</p>
+                        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.skills}</p>
                     )}
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         {profileData.skills.length} skill{profileData.skills.length !== 1 ? 's' : ''} selected
                     </p>
                 </div>
@@ -735,16 +740,14 @@ const ProfilePage = () => {
     // This is just for now - update later to show only the email and an option to change their password
     const renderEmailPassword = () => (
         <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
                 <div className="flex">
                     <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
+                        <Settings className="h-5 w-5 text-blue-400" />
                     </div>
                     <div className="ml-3">
-                        <h3 className="text-sm font-medium text-blue-800">Account Security</h3>
-                        <div className="mt-2 text-sm text-blue-700">
+                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">Account Security</h3>
+                        <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
                             <p>Email and password changes are handled through your account settings. Contact support if you need assistance with account security.</p>
                         </div>
                     </div>
@@ -771,39 +774,39 @@ const ProfilePage = () => {
         return (
             <div className="space-y-6">
                 <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Your Weekly Availability</h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Your Weekly Availability</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                         {isReadOnly ? 'Days of week you are generally available to volunteer.' : 
                             'Select the days of the week when you are generally available to volunteer'}
                     </p>
 
                     <div className="space-y-3">
                         {daysOfWeek.map((day) => (
-                            <label key={day.id} className="flex items-center">
+                            <label key={day.id} className="flex items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                                 <input
                                     type="checkbox"
                                     checked={profileData.availability_days.includes(day.id)}
                                     onChange={() => handleDayToggle(day.id)}
                                     disabled={isReadOnly}
-                                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                                    className={`h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-500 rounded ${
                                         isReadOnly ? 'cursor-not-allowed opacity-60' : ''
                                     }`}
                                 />
-                                <span className="ml-3 text-sm text-gray-700 font-medium">{day.label}</span>
+                                <span className="ml-3 text-sm text-gray-700 dark:text-gray-300 font-medium">{day.label}</span>
                             </label>
                         ))}
                     </div>
 
                     {profileData.availability_days.length > 0 && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <p className="text-sm font-medium text-blue-800 mb-2">Selected Days</p>
+                        <div className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-xl">
+                            <p className="text-sm font-medium text-primary-800 dark:text-primary-300 mb-2">Selected Days</p>
                             <div className="flex flex-wrap gap-2">
                                 {profileData.availability_days.map((dayId) =>{
                                     const day = daysOfWeek.find(d => d.id === dayId);
                                     return (
                                         <span
                                             key={dayId}
-                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-800 text-primary-800 dark:text-primary-200"
                                         >
                                             {day?.label}
                                         </span>
@@ -814,7 +817,7 @@ const ProfilePage = () => {
                     )}
                     
                     {errors.availability_days && (
-                        <p className="mt-2 text-sm text-red-600">{errors.availability_days}</p>
+                        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.availability_days}</p>
                     )}
                 </div>
             </div>
@@ -824,10 +827,10 @@ const ProfilePage = () => {
     // loading check
     if (!userId) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading user information...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading user information...</p>
                 </div>
             </div>
         );
@@ -852,18 +855,18 @@ const ProfilePage = () => {
 
     /* ----- Render Page ----- */
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
             <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="px-4 py-6 sm:px-0">
-                    <div className="bg-white shadow rounded-lg">
-                        <div className="divide-y divide-gray-200 lg:grid lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div className="divide-y divide-gray-200 dark:divide-gray-700 lg:grid lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
 
                             {/* -----Sidebar Section----- */}
                             <aside className="py-6 lg:col-span-3">
                                 <nav className="space-y-1">
                                     <div className="px-6 mb-6">
-                                        <h1 className="text-2xl font-bold text-gray-900">Profile Management</h1>
-                                        <p className="mt-1 text-sm text-gray-600">
+                                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile Management</h1>
+                                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                                             {profileExists
                                                 ? (isEditMode ? "Edit your information" : "View your volunteer information")
                                                 : 'Complete your volunteer profile'
@@ -878,10 +881,11 @@ const ProfilePage = () => {
                                             // make blue if item is active - gray if not 
                                             className={`${      
                                                 activeSection === item.id
-                                                    ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                                    : 'border-transparent text-gray-900 hover:bg-gray-50 hover:text-gray-900'
-                                            } group border-l-4 px-6 py-3 flex items-center text-sm font-medium w-full text-left`}
+                                                    ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500 text-primary-700 dark:text-primary-400'
+                                                    : 'border-transparent text-gray-900 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                            } group border-l-4 px-6 py-3 flex items-center text-sm font-medium w-full text-left transition-colors`}
                                         >
+                                            <item.icon className="h-5 w-5 mr-3" />
                                             <span className="truncate">{item.label}</span>
                                         </button>
                                     ))}
@@ -889,10 +893,10 @@ const ProfilePage = () => {
                             </aside>
 
                             {/* -----Main Content Section----- */}
-                            <form className="divide-y divide-gray-200 lg:col-span-9" onSubmit={handleSubmit}>
+                            <form className="divide-y divide-gray-200 dark:divide-gray-700 lg:col-span-9" onSubmit={handleSubmit}>
                                 <div className="py-6 px-4 sm:p-6 lg:pb-8">
                                     {success && (
-                                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                                        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl">
                                             <div className="flex">
                                                 <div className="flex-shrink-0">
                                                     <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -900,7 +904,7 @@ const ProfilePage = () => {
                                                     </svg>
                                                 </div>
                                                 <div className="ml-3">
-                                                    <p className="text-sm font-medium text-green-800">
+                                                    <p className="text-sm font-medium text-green-800 dark:text-green-300">
                                                         {profileExists ? 'Profile updated successfully!' : 'Profile created successfully!'}
                                                     </p>
                                                 </div>
@@ -908,25 +912,24 @@ const ProfilePage = () => {
                                         </div>
                                     )}
                                     <div className="mb-8">
-                                        <h2 className="text-lg font-medium text-gray-900">{sidebarItems.find(item => item.id === activeSection)?.label}</h2>
+                                        <h2 className="text-lg font-medium text-gray-900 dark:text-white">{sidebarItems.find(item => item.id === activeSection)?.label}</h2>
                                     </div>
 
                                     {renderContent()}
                                 </div>
                                 
                                 {/* Action Buttons */}
-                                <div className="pt-6 px-4 sm:px-6">
+                                <div className="pt-6 px-4 sm:px-6 pb-6">
                                     {errors.submit && (
-                                        <p className="mb-3 text-sm text-red-600">{errors.submit}</p>
+                                        <p className="mb-3 text-sm text-red-600 dark:text-red-400">{errors.submit}</p>
                                     )}
-                                    <div className="flex justify-end mb-3">
+                                    <div className="flex justify-end gap-3">
                                         {profileExists && !isEditMode ? (
                                             // View mode - show an Edit button
                                             <button
                                                 type="button"
                                                 onClick={handleEditClick}
-                                                className="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600
-                                                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                className="py-3 px-6 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors shadow-lg"
                                             >
                                                 Edit Profile
                                             </button>
@@ -937,8 +940,7 @@ const ProfilePage = () => {
                                                     <button
                                                         type="button"
                                                         onClick={handleCancelEdit}
-                                                        className="py-2 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700
-                                                            bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        className="py-3 px-6 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
                                                     >
                                                         Cancel
                                                     </button>
@@ -946,11 +948,10 @@ const ProfilePage = () => {
                                                 <button
                                                     type="submit"
                                                     disabled={saving}
-                                                    className={`py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
-                                                         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                                                    className={`py-3 px-6 rounded-xl font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors shadow-lg ${
                                                         saving 
                                                         ? 'bg-gray-400 cursor-not-allowed' 
-                                                        : 'bg-blue-600 hover:bg-blue-700'
+                                                        : 'bg-primary-600 hover:bg-primary-700'
                                                     }`}
                                                 >
                                                     {saving ? 'Saving data...' : (profileExists ? 'Save Changes' : 'Create Profile')}
@@ -964,34 +965,45 @@ const ProfilePage = () => {
                     </div>
 
                     {/* ----- Volunteer History Section ----- */}
-                    <div className="mt-8 p-6 bg-white shadow rounded-lg">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                            Volunteer History
-                        </h2>
-                        <p className="text-gray-600 mb-4">
+                    <div className="mt-8 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                                <History className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                Volunteer History
+                            </h2>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
                             View your past volunteer events and participation status.
                         </p>
-                        <a
-                            href="/volunteer/history"
-                            className="inline-block bg-blue-600 shadow-sm text-sm font-medium text-white px-5 py-2
-                                rounded-md hover:bg-blue-700 transition-colors"
-                        >
+                        
+                            
+                        <a href="/volunteer/history"
+                            className="inline-flex items-center bg-primary-600 text-white px-5 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-md">
+                            <History className="h-4 w-4 mr-2" />
                             View History
                         </a>
                     </div>
+                    
                     {/* ----- Event Registration Section ----- */}
-                    <div className="mt-8 p-6 bg-white shadow rounded-lg">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                            Event Registration
-                        </h2>
-                        <p className="text-gray-600 mb-4">
+                    <div className="mt-8 p-6 bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                <CalendarDays className="h-5 w-5 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                Event Registration
+                            </h2>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
                             Browse and register for upcoming volunteer events that match your skills.
                         </p>
-                        <a
-                            href="/volunteer/register-events"
-                            className="inline-block bg-blue-600 shadow-sm text-sm font-medium text-white px-5 py-2
-                                rounded-md hover:bg-blue-700 transition-colors"
-                        >
+                        
+                            
+                        <a href="/volunteer/register-events"
+                            className="inline-flex items-center bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-colors shadow-md">
+                            <CalendarDays className="h-4 w-4 mr-2" />
                             Browse Events
                         </a>
                     </div>
