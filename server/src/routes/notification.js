@@ -24,13 +24,13 @@ router.delete("/notifications/:id", deleteNotification);
 // ============================================================================
 
 // GET /api/notifications/volunteer/:volunteer_id - Get all notifications for a volunteer
-router.get("/volunteer/:volunteer_id", getVolunteerNotificationsDB);
+router.get("/notifications/volunteer/:volunteer_id", getVolunteerNotificationsDB);
 
 // GET /api/notifications/volunteer/:volunteer_id/unread-count - Get unread notification count
-router.get("/volunteer/:volunteer_id/unread-count", getUnreadCountDB);
+router.get("/notifications/volunteer/:volunteer_id/unread-count", getUnreadCountDB);
 
 // PUT /api/notifications/:notification_delivery_id/mark-read - Mark notification as read
-router.put("/:notification_delivery_id/mark-read", markNotificationAsReadDB);
+router.put("/notifications/:notification_delivery_id/mark-read", markNotificationAsReadDB);
 
 
 module.exports = router;
