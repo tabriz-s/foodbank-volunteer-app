@@ -9,7 +9,7 @@ import {
     getNotificationIcon,
     getNotificationColor
 } from '../../services/NotificationAPI';
-import { User, Settings, Award, Calendar, History, CalendarDays } from 'lucide-react';
+import { User, Settings, Award, Calendar, History, CalendarDays, Bell } from 'lucide-react';
 
 const ProfilePage = () => {
 
@@ -465,11 +465,11 @@ const ProfilePage = () => {
 
     // define the webpages side navbar
     const sidebarItems = [
-        { id: 'personal-info', label: 'Personal Info' },
-        { id: 'skills', label: 'Skills' },
-        { id: 'email-password', label: 'Email & Password' },
-        { id: 'availability', label: 'Availability' },
-        { id: 'notifications', label: 'Notifications' } 
+        { id: 'personal-info', label: 'Personal Info', icon: User },
+        { id: 'skills', label: 'Skills', icon: Award },
+        { id: 'email-password', label: 'Email & Password', icon: Settings },
+        { id: 'availability', label: 'Availability', icon: Calendar },
+        { id: 'notifications', label: 'Notifications', icon: Bell } 
     ]; 
 
     // render volunteers personal info when this section of the navbar is selected
