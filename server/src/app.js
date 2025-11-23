@@ -57,7 +57,7 @@ app.use('/api', require('./routes/history'));
 app.use('/api/matching', require('./routes/matching'));
 
 // Notification routes
-app.use("/api", require("./routes/notification"));
+app.use("/api/notifications", require("./routes/notification"));
 
 // Report routes
 app.use('/api/reports', require('./routes/reports'));
