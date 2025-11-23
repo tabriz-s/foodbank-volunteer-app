@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Calendar, MapPin, Clock, Users, AlertCircle, Check, X } from 'lucide-react';
 import {
     fetchAvailableEvents,
     fetchOtherEvents,
@@ -14,17 +15,17 @@ import {
 
 const EventRegistration = () => {
 
-    //const { userId } = useAuth();
+    //const { userID } = useAuth();
     const { volunteerId } = useAuth();
-    const [activeTab, setActiveTab] = useState('browse'); // 'browse' or 'registered'
+    const [activeTab, setActiveTab] = useState('browse');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // Data states
     const [availableEvents, setAvailableEvents] = useState([]);
     const [otherEvents, setOtherEvents] = useState([]);
     const [myEvents, setMyEvents] = useState([]);
-    
+
     // Modal states
     const [showRegistrationModal, setShowRegistrationModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -36,13 +37,11 @@ const EventRegistration = () => {
         try {
             setLoading(true);
             setError(null);
-
             const [availableRes, otherRes, myRes] = await Promise.all([
                 fetchAvailableEvents(volunteerId),
                 fetchOtherEvents(volunteerId),
                 fetchMyEvents(volunteerId)
             ]);
-
             setAvailableEvents(availableRes.data || []);
             setOtherEvents(otherRes.data || []);
             setMyEvents(myRes.data || []);
@@ -78,19 +77,16 @@ const EventRegistration = () => {
             setRegistering(true);
             // Pass null for selectedSkill if no skills required
             const skillToRegister = selectedEvent.required_skills && selectedEvent.required_skills.length > 0 
-                ? selectedSkill 
-                : null;
+                ? selectedSkill : null;
             
             await registerForEvent(volunteerId, selectedEvent.Event_id, skillToRegister);
-            
             // Reload events data
             await loadEventsData();
-            
+
             // Close modal
             setShowRegistrationModal(false);
             setSelectedEvent(null);
             setSelectedSkill(null);
-            
             alert('Successfully registered for event!');
         } catch (err) {
             console.error('Registration error:', err);
@@ -102,16 +98,11 @@ const EventRegistration = () => {
 
     // Handle unregistration
     const handleUnregister = async (signupId) => {
-        if (!window.confirm('Are you sure you want to unregister from this event?')) {
-            return;
-        }
+        if (!window.confirm('Are you sure you want to unregister from this event?')) return;
 
         try {
             await unregisterFromEvent(signupId, volunteerId);
-            
-            // Reload events data
             await loadEventsData();
-            
             alert('Successfully unregistered from event!');
         } catch (err) {
             console.error('Unregister error:', err);
@@ -119,35 +110,44 @@ const EventRegistration = () => {
         }
     };
 
+    
+    const getUrgencyBadgeColor = (urgency) => {
+        switch (urgency) {
+            case 'Critical': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+            case 'High': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+            case 'Medium': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+            default: return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+        }
+    };
+
     // Render event card for available events
     const renderAvailableEventCard = (event) => (
-        <div key={event.Event_id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            {/* Event Header */}
+        <div key={event.Event_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-2xl">{getEventTypeIcon(event.Event_type)}</span>
-                        <h3 className="text-xl font-bold text-gray-900">{event.Event_name}</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{event.Event_name}</h3>
                     </div>
-                    <p className="text-gray-600 text-sm">{event.Description}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{event.Description}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyColor(event.Urgency)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyBadgeColor(event.Urgency)}`}>
                     {event.Urgency}
                 </span>
             </div>
 
             {/* Event Details */}
-            <div className="space-y-2 mb-4 text-sm text-gray-700">
+            <div className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">📅 Date:</span>
+                    <Calendar className="h-4 w-4 text-gray-400" />
                     <span>{formatEventDate(event.Date)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">🕐 Time:</span>
+                    <Clock className="h-4 w-4 text-gray-400" />
                     <span>{formatEventTime(event.Start_time)} - {formatEventTime(event.end_time)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">📍 Location:</span>
+                    <MapPin className="h-4 w-4 text-gray-400" />
                     <span>{event.Location}</span>
                 </div>
             </div>
@@ -155,15 +155,13 @@ const EventRegistration = () => {
             {/* Required Skills */}
             {event.required_skills && event.required_skills.length > 0 && (
                 <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Skill Positions Available:</p>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Skill Positions Available:</p>
                     <div className="space-y-2">
                         {event.required_skills.map((skill) => (
-                            <div key={skill.Skills_id} className="flex justify-between items-center bg-blue-50 px-3 py-2 rounded">
-                                <span className="text-sm font-medium text-gray-800">{skill.Skill_name}</span>
-                                <span className="text-sm text-gray-600">
-                                    {skill.Needed_count ? 
-                                        `${skill.Needed_count - skill.Current_signups}/${skill.Needed_count} spots left` 
-                                        : 'Unlimited spots'}
+                            <div key={skill.Skills_id} className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{skill.Skill_name}</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    {skill.Needed_count ? `${skill.Needed_count - skill.Current_signups}/${skill.Needed_count} spots` : 'Unlimited'}
                                 </span>
                             </div>
                         ))}
@@ -171,10 +169,9 @@ const EventRegistration = () => {
                 </div>
             )}
 
-            {/* Register Button */}
             <button
                 onClick={() => handleRegisterClick(event)}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="w-full bg-primary-600 text-white py-3 px-4 rounded-xl hover:bg-primary-700 transition-colors font-medium shadow-md"
             >
                 Register for Event
             </button>
@@ -183,40 +180,40 @@ const EventRegistration = () => {
 
     // Render event card for other events
     const renderOtherEventCard = (event) => (
-        <div key={event.Event_id} className="bg-gray-50 rounded-lg shadow-md p-6 opacity-75">
-            {/* Event Header */}
+        <div key={event.Event_id} className="bg-gray-100 dark:bg-gray-700/50 rounded-xl shadow-md p-6 opacity-80 border border-gray-200 dark:border-gray-600">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-2xl">{getEventTypeIcon(event.Event_type)}</span>
-                        <h3 className="text-xl font-bold text-gray-900">{event.Event_name}</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{event.Event_name}</h3>
                     </div>
-                    <p className="text-gray-600 text-sm">{event.Description}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{event.Description}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyColor(event.Urgency)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyBadgeColor(event.Urgency)}`}>
                     {event.Urgency}
                 </span>
             </div>
 
-            {/* Event Details */}
-            <div className="space-y-2 mb-4 text-sm text-gray-700">
+            <div className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">📅 Date:</span>
+                    <Calendar className="h-4 w-4 text-gray-400" />
                     <span>{formatEventDate(event.Date)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">🕐 Time:</span>
+                    <Clock className="h-4 w-4 text-gray-400" />
                     <span>{formatEventTime(event.Start_time)} - {formatEventTime(event.end_time)}</span>
                 </div>
             </div>
 
-            {/* Required Skills */}
             {event.required_skills && event.required_skills.length > 0 && (
                 <div className="mb-4">
-                    <p className="text-sm font-semibold text-red-600 mb-2">⚠️ Skills Needed:</p>
+                    <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-2 flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Skills Needed:
+                    </p>
                     <div className="flex flex-wrap gap-2">
                         {event.required_skills.map((skill) => (
-                            <span key={skill.Skills_id} className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
+                            <span key={skill.Skills_id} className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-3 py-1 rounded-full text-sm">
                                 {skill.Skill_name}
                             </span>
                         ))}
@@ -224,104 +221,98 @@ const EventRegistration = () => {
                 </div>
             )}
 
-            <p className="text-sm text-gray-600 italic">
-                You don't have the required skills for this event. Share with someone who does!
+            <p className="text-sm text-gray-600 dark:text-gray-400 italic">
+                You don't have the required skills for this event.
             </p>
         </div>
     );
 
     // Render event card for registered events
     const renderRegisteredEventCard = (event) => (
-        <div key={event.Signup_id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-            {/* Event Header */}
+        <div key={event.Signup_id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500">
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-2xl">{getEventTypeIcon(event.Event_type)}</span>
-                        <h3 className="text-xl font-bold text-gray-900">{event.Event_name}</h3>
-                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                            ✓ Registered
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{event.Event_name}</h3>
+                        <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                            <Check className="h-3 w-3 mr-1" />
+                            Registered
                         </span>
                     </div>
-                    <p className="text-gray-600 text-sm">{event.Description}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{event.Description}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyColor(event.Urgency)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getUrgencyBadgeColor(event.Urgency)}`}>
                     {event.Urgency}
                 </span>
             </div>
 
-            {/* Event Details */}
-            <div className="space-y-2 mb-4 text-sm text-gray-700">
+            <div className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">📅 Date:</span>
+                    <Calendar className="h-4 w-4 text-gray-400" />
                     <span>{formatEventDate(event.Date)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">🕐 Time:</span>
+                    <Clock className="h-4 w-4 text-gray-400" />
                     <span>{formatEventTime(event.Start_time)} - {formatEventTime(event.end_time)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold">📍 Location:</span>
+                    <MapPin className="h-4 w-4 text-gray-400" />
                     <span>{event.Location}</span>
                 </div>
                 {event.Registered_as_skill && (
                     <div className="flex items-center gap-2">
-                        <span className="font-semibold">👤 Your Role:</span>
-                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                        <Users className="h-4 w-4 text-gray-400" />
+                        <span>Your Role: </span>
+                        <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-medium">
                             {event.Registered_as_skill}
                         </span>
                     </div>
                 )}
             </div>
 
-            {/* Unregister Button */}
             <button
                 onClick={() => handleUnregister(event.Signup_id)}
-                className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors font-medium"
+                className="w-full bg-red-600 text-white py-3 px-4 rounded-xl hover:bg-red-700 transition-colors font-medium"
             >
                 Unregister from Event
             </button>
         </div>
     );
 
-    // Registration Modal
     const renderRegistrationModal = () => {
         if (!showRegistrationModal || !selectedEvent) return null;
 
         return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-                    {/* Modal Header */}
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Register for Event</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Register for Event</h2>
                         <button
                             onClick={() => setShowRegistrationModal(false)}
-                            className="text-gray-400 hover:text-gray-600 text-2xl"
+                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         >
-                            ×
+                            <X size={24} />
                         </button>
                     </div>
 
-                    {/* Event Details */}
                     <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedEvent.Event_name}</h3>
-                        <p className="text-gray-600 mb-4">{selectedEvent.Description}</p>
-                        <div className="space-y-2 text-sm text-gray-700">
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{selectedEvent.Event_name}</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">{selectedEvent.Description}</p>
+                        <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                             <div className="flex items-center gap-2">
-                                <span className="font-semibold">📅 Date:</span>
+                                <Calendar className="h-4 w-4 text-gray-400" />
                                 <span>{formatEventDate(selectedEvent.Date)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="font-semibold">🕐 Time:</span>
+                                <Clock className="h-4 w-4 text-gray-400" />
                                 <span>{formatEventTime(selectedEvent.Start_time)} - {formatEventTime(selectedEvent.end_time)}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Skill Selection */}
-                    {/* here */}
                     <div className="mb-6">
-                        <h4 className="font-semibold text-gray-900 mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
                             {selectedEvent.required_skills && selectedEvent.required_skills.length > 0 
                                 ? 'Select Your Role:' 
                                 : 'Event Details:'}
@@ -336,26 +327,22 @@ const EventRegistration = () => {
                                         <div
                                             key={skill.Skills_id}
                                             onClick={() => !isFull && setSelectedSkill(skill.Skills_id)}
-                                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                            className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
                                                 selectedSkill === skill.Skills_id
-                                                    ? 'border-blue-500 bg-blue-50'
+                                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
                                                     : isFull
-                                                    ? 'border-gray-300 bg-gray-100 opacity-50 cursor-not-allowed'
-                                                    : 'border-gray-300 hover:border-blue-300'
+                                                    ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed'
+                                                    : 'border-gray-300 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700'
                                             }`}
                                         >
                                             <div className="flex justify-between items-center">
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{skill.Skill_name}</p>
-                                                    <p className="text-sm text-gray-600">{skill.Category}</p>
+                                                    <p className="font-medium text-gray-900 dark:text-white">{skill.Skill_name}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{skill.Category}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className={`text-sm font-medium ${isFull ? 'text-red-600' : 'text-gray-700'}`}>
-                                                        {isFull ? 
-                                                            'FULL' 
-                                                            : skill.Needed_count ? 
-                                                                `${spotsLeft} spots left` 
-                                                                : 'Unlimited'}
+                                                    <p className={`text-sm font-medium ${isFull ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                        {isFull ? 'FULL' : skill.Needed_count ? `${spotsLeft} spots left` : 'Unlimited'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -363,35 +350,32 @@ const EventRegistration = () => {
                                     );
                                 })
                             ) : (
-                                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                                    <p className="text-green-800 font-medium">✓ No specific skills required!</p>
-                                    <p className="text-green-700 text-sm mt-1">Anyone can volunteer for this event.</p>
+                                <div className="bg-green-50 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-4">
+                                    <p className="text-green-800 dark:text-green-300 font-medium flex items-center">
+                                        <Check className="h-5 w-5 mr-2" />
+                                        No specific skills required!
+                                    </p>
+                                    <p className="text-green-700 dark:text-green-400 text-sm mt-1">Anyone can volunteer for this event.</p>
                                 </div>
                             )}
                         </div>
                     </div>
-                    {/* here */}
-                    {/* Action Buttons */}
+
                     <div className="flex gap-3">
                         <button
                             onClick={() => setShowRegistrationModal(false)}
-                            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium"
+                            className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 px-4 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
                             disabled={registering}
                         >
                             Cancel
                         </button>
-                        {/* here */}
                         <button
                             onClick={handleRegisterConfirm}
-                            disabled={
-                                (selectedEvent.required_skills && selectedEvent.required_skills.length > 0 && !selectedSkill) 
-                                || registering
-                            }
-                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            disabled={(selectedEvent.required_skills && selectedEvent.required_skills.length > 0 && !selectedSkill) || registering}
+                            className="flex-1 bg-primary-600 text-white py-3 px-4 rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                             {registering ? 'Registering...' : 'Confirm Registration'}
                         </button>
-                        {/* here */}
                     </div>
                 </div>
             </div>
@@ -400,10 +384,10 @@ const EventRegistration = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading events...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-400">Loading events...</p>
                 </div>
             </div>
         );
@@ -411,12 +395,13 @@ const EventRegistration = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-red-600 mb-4">{error}</p>
+                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                    <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
                     <button
                         onClick={loadEventsData}
-                        className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="bg-primary-600 text-white py-2 px-6 rounded-xl hover:bg-primary-700 transition-colors"
                     >
                         Try Again
                     </button>
@@ -426,12 +411,12 @@ const EventRegistration = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
             {/* Header */}
-            <div className="bg-blue-600 text-white py-12">
+            <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white py-12">
                 <div className="max-w-7xl mx-auto px-4">
                     <h1 className="text-4xl font-bold mb-2">Event Registration</h1>
-                    <p className="text-blue-100">Browse and register for volunteer opportunities</p>
+                    <p className="text-primary-100">Browse and register for volunteer opportunities</p>
                 </div>
             </div>
 
@@ -440,32 +425,31 @@ const EventRegistration = () => {
                 <div className="flex gap-4 mb-6">
                     <button
                         onClick={() => setActiveTab('browse')}
-                        className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${
+                        className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all ${
                             activeTab === 'browse'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-primary-600 text-white shadow-lg'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                     >
                         Browse Events
                     </button>
                     <button
                         onClick={() => setActiveTab('registered')}
-                        className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${
+                        className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all ${
                             activeTab === 'registered'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                ? 'bg-primary-600 text-white shadow-lg'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}
                     >
-                        My Registered Events {myEvents.length > 0 && `(${myEvents.length})`}
+                        My Events {myEvents.length > 0 && `(${myEvents.length})`}
                     </button>
                 </div>
 
-                {/* Tab Content */}
                 {activeTab === 'browse' ? (
                     <div>
-                        {/* Available Events Section */}
+                        {/* Available Events */}
                         <div className="mb-12">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                                 Available Events for You
                             </h2>
                             {availableEvents.length > 0 ? (
@@ -473,17 +457,20 @@ const EventRegistration = () => {
                                     {availableEvents.map(renderAvailableEventCard)}
                                 </div>
                             ) : (
-                                <p className="text-gray-600 text-center py-8">No available events at this time.</p>
+                                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                                    <p className="text-gray-600 dark:text-gray-400">No available events at this time.</p>
+                                </div>
                             )}
                         </div>
 
-                        {/* Other Events Section */}
+                        {/* Other Events */}
                         {otherEvents.length > 0 && (
                             <div>
                                 <div className="text-center mb-6">
-                                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Other Events</h2>
-                                    <p className="text-gray-600">
-                                        You don't have the required skills for these events, but share them with friends who do!
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Other Events</h2>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        You don't have the required skills for these events
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -494,7 +481,7 @@ const EventRegistration = () => {
                     </div>
                 ) : (
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                             My Registered Events
                         </h2>
                         {myEvents.length > 0 ? (
@@ -502,11 +489,12 @@ const EventRegistration = () => {
                                 {myEvents.map(renderRegisteredEventCard)}
                             </div>
                         ) : (
-                            <div className="text-center py-12">
-                                <p className="text-gray-600 mb-4">You haven't registered for any events yet.</p>
+                            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                                <p className="text-gray-600 dark:text-gray-400 mb-4">You haven't registered for any events yet.</p>
                                 <button
                                     onClick={() => setActiveTab('browse')}
-                                    className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="bg-primary-600 text-white py-2 px-6 rounded-xl hover:bg-primary-700 transition-colors"
                                 >
                                     Browse Available Events
                                 </button>
@@ -516,7 +504,6 @@ const EventRegistration = () => {
                 )}
             </div>
 
-            {/* Registration Modal */}
             {renderRegistrationModal()}
         </div>
     );

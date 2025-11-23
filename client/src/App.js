@@ -68,7 +68,7 @@ function App() {
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
               <Navbar />
 
-              {/* Development Status Bar */}
+              {/* Development Status Bar
               <div className="bg-primary-100 dark:bg-primary-900/30 border-b border-primary-200 dark:border-primary-800 px-4 py-2">
                 <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
                   <span className="text-primary-800 dark:text-primary-300 font-medium">
@@ -78,7 +78,7 @@ function App() {
                     Backend: {apiStatus}
                   </span>
                 </div>
-              </div>
+              </div> */}
 
               <main className="flex-1">
                 <Routes>

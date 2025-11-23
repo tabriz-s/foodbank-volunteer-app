@@ -36,9 +36,6 @@ const Navbar = () => {
                 <span className="text-xl font-bold text-gray-800 dark:text-white">
                   Singh's Generosity
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
-                  Nourishing Communities
-                </span>
               </div>
             </Link>
           </div>
