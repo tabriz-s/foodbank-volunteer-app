@@ -15,6 +15,12 @@ const VolunteerMatchingForm = () => {
     const [loading, setLoading] = useState(false);
     const [loadingMatches, setLoadingMatches] = useState(true);
     const [message, setMessage] = useState("");
+    const [showAll, setShowAll] = useState(false);
+    const [volunteerFilter, setVolunteerFilter] = useState("");
+    const [eventFilter, setEventFilter] = useState("");
+    const [sortOption, setSortOption] = useState("");
+
+
 
     // Notification context for real-time feedback
     const { addNotification } = useContext(NotificationContext);
@@ -70,7 +76,7 @@ const VolunteerMatchingForm = () => {
                         volunteer: m.VolunteerName || `Volunteer ${m.Volunteer_id}`,
                         event: m.EventName || `Event ${m.Event_id}`,
                     }));
-                    setMatches(detailedMatches);
+                    setMatches(detailedMatches.reverse());
                 }
             } catch (error) {
                 console.error("Error fetching matches:", error);
@@ -81,6 +87,22 @@ const VolunteerMatchingForm = () => {
 
         loadMatches();
     }, [volunteers]);
+
+    // Filter + sort matches
+    const processedMatches = matches
+        .filter(m =>
+            (volunteerFilter ? m.volunteerId === parseInt(volunteerFilter) : true) &&
+            (eventFilter ? m.eventId === parseInt(eventFilter) : true)
+        )
+        .sort((a, b) => {
+            if (sortOption === "volunteer") {
+                return a.volunteer.localeCompare(b.volunteer);
+            }
+            if (sortOption === "event") {
+                return a.event.localeCompare(b.event);
+            }
+            return 0;
+        });
 
     // Handle match creation
     const handleSubmit = async (e) => {
@@ -114,13 +136,13 @@ const VolunteerMatchingForm = () => {
                 const event = events.find(e => e.id === parseInt(selectedEvent));
 
                 setMatches(prev => [
-                    ...prev,
                     {
                         volunteerId: parseInt(selectedVolunteer),
                         eventId: parseInt(selectedEvent),
                         volunteer: volunteer ? volunteer.name : `Volunteer ${selectedVolunteer}`,
                         event: event ? event.name : `Event ${selectedEvent}`,
                     },
+                    ...prev,
                 ]);
 
                 // Reset dropdowns
@@ -190,7 +212,7 @@ const VolunteerMatchingForm = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors">
-            <div className="max-w-2xl mx-auto px-4">
+            <div className="max-w-3xl mx-auto px-4">
                 <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 border border-gray-200 dark:border-gray-700">
                     {/* Header */}
                     <div className="flex items-center space-x-3 mb-6">
@@ -282,15 +304,109 @@ const VolunteerMatchingForm = () => {
                         </button>
                     </form>
 
-                    {/* Matches List */}
+                    {/* FILTER + SORT UI */}
                     {matches.length > 0 && (
+                        <div className="mt-20 space-y-3">
+
+                            {/* FILTER + SORT ROW */}
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+                                {/* Volunteer Filter */}
+                                <div className="relative w-full">
+                                    <select
+                                        value={volunteerFilter}
+                                        onChange={e => setVolunteerFilter(e.target.value)}
+                                        className="appearance-none border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
+                                                   text-gray-800 dark:text-gray-200 px-3 py-2 pr-10 rounded-xl w-full"
+                                    >
+                                        <option value="">Filter by Volunteer</option>
+                                        {volunteers.map(v => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Custom arrow */}
+                                    <svg
+                                        className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </div>
+
+
+                                {/* Event Filter */}
+                                <div className="relative w-full">
+                                    <select
+                                        value={eventFilter}
+                                        onChange={e => setEventFilter(e.target.value)}
+                                        className="appearance-none border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
+                                      text-gray-800 dark:text-gray-200 px-3 py-2 pr-10 rounded-xl w-full"
+                                    >
+                                        <option value="">Filter by Event</option>
+                                        {events.map(ev => (
+                                            <option key={ev.id} value={ev.id}>{ev.name}</option>
+                                        ))}
+                                    </select>
+
+                                    <svg
+                                        className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path d="M6 9l6 6 6-6" />
+                                    </svg>
+                                </div>
+
+
+                            </div>
+                            {/* Sorting */}
+                            <div className="relative w-full md:w-[49%]">
+                                <select
+                                    value={sortOption}
+                                    onChange={e => setSortOption(e.target.value)}
+                                    className="appearance-none border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
+                                      text-gray-800 dark:text-gray-200 px-3 py-2 pr-10 rounded-xl w-full"
+                                >
+                                    <option value="">Sort</option>
+                                    <option value="volunteer">Sort by Volunteer (A–Z)</option>
+                                    <option value="event">Sort by Event (A–Z)</option>
+                                </select>
+
+                                <svg
+                                    className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MATCHES LIST */}
+                    {processedMatches.length > 0 && (
                         <div className="mt-8">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Current Assignments</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Current Assignments
+                            </h3>
+
                             <ul className="space-y-3">
-                                {matches.map((m, idx) => (
+                                {(showAll ? processedMatches : processedMatches.slice(0, 8)).map((m, idx) => (
                                     <li
                                         key={idx}
-                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl
+                                                   bg-gray-50 dark:bg-gray-700/50 flex items-center justify-between
+                                                   hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         <div className="flex items-center">
                                             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg mr-3">
@@ -302,6 +418,7 @@ const VolunteerMatchingForm = () => {
                                                 <span className="text-gray-700 dark:text-gray-300">{m.event}</span>
                                             </div>
                                         </div>
+
                                         <button
                                             onClick={() => handleDelete(m)}
                                             className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
@@ -311,8 +428,23 @@ const VolunteerMatchingForm = () => {
                                     </li>
                                 ))}
                             </ul>
+
+                            {/* See More / Less */}
+                            {processedMatches.length > 8 && (
+                                <div className="mt-4 text-center">
+                                    <button
+                                        onClick={() => setShowAll(!showAll)}
+                                        className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium"
+                                    >
+                                        {showAll
+                                            ? "See Less"
+                                            : `See More (${processedMatches.length - 8} more)`}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
+
 
                     {loadingMatches && (
                         <div className="mt-8 flex items-center justify-center py-8">
