@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Calendar, MapPin, Clock, Users, AlertCircle, Check, X } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import {
     fetchAvailableEvents,
     fetchOtherEvents,
@@ -31,6 +32,10 @@ const EventRegistration = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedSkill, setSelectedSkill] = useState(null);
     const [registering, setRegistering] = useState(false);
+
+    // Confirmation model state to unregister
+    const [showUnregisterConfirm, setShowUnregisterConfirm] = useState(false);
+    const [eventToUnregister, setEventToUnregister] = useState(null);
 
     // Fetch all events data
     const loadEventsData = async () => {
@@ -69,7 +74,10 @@ const EventRegistration = () => {
     const handleRegisterConfirm = async () => {
         // Only require skill selection if event has required skills
         if (selectedEvent.required_skills && selectedEvent.required_skills.length > 0 && !selectedSkill) {
-            alert('Please select a skill role');
+            toast.error('Please select a skill role', {
+                duration: 3000,
+                position: 'top-center',
+            });
             return;
         }
 
@@ -80,33 +88,57 @@ const EventRegistration = () => {
                 ? selectedSkill : null;
             
             await registerForEvent(volunteerId, selectedEvent.Event_id, skillToRegister);
-            // Reload events data
-            await loadEventsData();
 
             // Close modal
             setShowRegistrationModal(false);
             setSelectedEvent(null);
             setSelectedSkill(null);
-            alert('Successfully registered for event!');
+
+            toast.success("You're registered! We'll send you a reminder before the event.", {
+                duration: 4000,
+                position: 'top-center',
+            });
+
+            // Reload events data
+            await loadEventsData();
+
         } catch (err) {
             console.error('Registration error:', err);
-            alert(err.message || 'Failed to register for event');
+            toast.error('Registration failed. Please ensure you select the skills you have and try again.', {
+                duration: 4000,
+                position: 'top-center',
+            });
         } finally {
             setRegistering(false);
         }
     };
 
-    // Handle unregistration
-    const handleUnregister = async (signupId) => {
-        if (!window.confirm('Are you sure you want to unregister from this event?')) return;
+    // Handle unregistration - Show confirmation modal
+    const handleUnregisterClick = (signupId) => {
+        setEventToUnregister(signupId);
+        setShowUnregisterConfirm(true);
+    };
 
+    const handleUnregisterConfirm = async () => {
         try {
-            await unregisterFromEvent(signupId, volunteerId);
+            await unregisterFromEvent(eventToUnregister, volunteerId);
+            
+            // Close confirmation modal
+            setShowUnregisterConfirm(false);
+            setEventToUnregister(null);
+            
+            toast.success('Successfully unregistered from event', {
+                duration: 3000,
+                position: 'top-center',
+            });
+            
             await loadEventsData();
-            alert('Successfully unregistered from event!');
         } catch (err) {
             console.error('Unregister error:', err);
-            alert(err.message || 'Failed to unregister from event');
+            toast.error('Failed to unregister. Please try again.', {
+                duration: 4000,
+                position: 'top-center',
+            });
         }
     };
 
@@ -272,13 +304,54 @@ const EventRegistration = () => {
             </div>
 
             <button
-                onClick={() => handleUnregister(event.Signup_id)}
+                onClick={() => handleUnregisterClick(event.Signup_id)}
                 className="w-full bg-red-600 text-white py-3 px-4 rounded-xl hover:bg-red-700 transition-colors font-medium"
             >
                 Unregister from Event
             </button>
         </div>
     );
+
+    // NEW: Render unregister confirmation modal
+    const renderUnregisterConfirmModal = () => {
+        if (!showUnregisterConfirm) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-8 shadow-2xl">
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                            Unregister from Event?
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            Are you sure you want to unregister? This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => {
+                                setShowUnregisterConfirm(false);
+                                setEventToUnregister(null);
+                            }}
+                            className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-3 px-4 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleUnregisterConfirm}
+                            className="flex-1 bg-red-500 text-white py-3 px-4 rounded-xl hover:bg-red-600 transition-colors font-medium"
+                        >
+                            Yes, Unregister
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderRegistrationModal = () => {
         if (!showRegistrationModal || !selectedEvent) return null;
@@ -412,6 +485,9 @@ const EventRegistration = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+            {/* Toast container */}
+            <Toaster />
+
             {/* Header */}
             <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white py-12">
                 <div className="max-w-7xl mx-auto px-4">
@@ -505,6 +581,7 @@ const EventRegistration = () => {
             </div>
 
             {renderRegistrationModal()}
+            {renderUnregisterConfirmModal()}
         </div>
     );
 };
