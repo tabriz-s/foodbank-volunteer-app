@@ -185,13 +185,38 @@ const ProfilePage = () => {
         }
     };
 
-    // handle text inputs
+    // Auto-format phone number as user types
+    const formatPhoneNumber = (value) => {
+        // Remove all non-numeric characters
+        const phoneNumber = value.replace(/\D/g, '');
+        
+        // Format as (XXX) XXX-XXXX
+        if (phoneNumber.length <= 3) {
+            return phoneNumber;
+        } else if (phoneNumber.length <= 6) {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+        } else {
+            return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+        }
+    };
+
+    // Handle text inputs
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setProfileData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        // Handling for phone number to auto-format
+        if (name === 'phone_number') {
+            const formatted = formatPhoneNumber(value);
+            setProfileData(prev => ({
+                ...prev,
+                [name]: formatted
+            }));
+        } else {
+            setProfileData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
         
         // clear the error when the user starts typing
         if (errors[name]) {
@@ -359,7 +384,7 @@ const ProfilePage = () => {
         } else if (!/^\d{5}(-\d{4})?$/.test(profileData.zip_code.trim())) {
             newErrors.zip_code = 'Please enter a valid zip code (12345 or 12345-6789)';
         }
-
+ 
         // phone number
         if (!profileData.phone_number.trim()) {
             newErrors.phone_number = 'Phone number is required';
@@ -537,6 +562,7 @@ const ProfilePage = () => {
                         value={profileData.phone_number}
                         onChange={handleInputChange}
                         placeholder="(123) 456-7890"
+                        maxLength="14"
                         disabled={isReadOnly}
                         className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all ${
                             isReadOnly ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''
@@ -544,6 +570,11 @@ const ProfilePage = () => {
                     />
                     {errors.phone_number && (
                         <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.phone_number}</p>
+                    )}
+                    {!isReadOnly && (
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Format: (123) 456-7890
+                        </p>
                     )}
                 </div>
                 
